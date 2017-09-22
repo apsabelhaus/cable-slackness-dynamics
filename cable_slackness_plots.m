@@ -25,8 +25,8 @@ k = 2;
 num_pts = 1000;
 
 % Let's go for some range in x.
-xmin = -2;
-xmax = 2;
+xmin = -1.5;
+xmax = 1.5;
 
 % Add a line along the x-axis and y-axis.
 % Adapted from: https://www.mathworks.com/matlabcentral/answers/97996-is-it-possible-to-add-x-and-y-axis-lines-to-a-plot-in-matlab
@@ -34,7 +34,7 @@ colorAxisLine = 'k';
 linestyleAxisLine = ':';
 
 
-%% Plot 1: F = k \delta x
+%% Plot 1 and 1.5: F = k \delta x
 % This plot shows the linear function F = k \delta x, 
 % without the rectification.
 
@@ -53,6 +53,29 @@ xlim([xmin, xmax]);
 ylim([xmin, xmax]);
 % Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
 plot(dx, F,'k');
+
+
+handle = gca;
+% Plot the lines:
+line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+
+% Axis labels:
+ylabel('F, applied force');
+xlabel('\Delta x, cable stretch');
+
+% Next, also plot the piecewise-continuous rectified function.
+% Just zero out the less-than-zero terms:
+F_rect = (F >= 0).*F;
+
+% make the plot!
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+% Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
+plot(dx, F_rect,'k');
 
 
 handle = gca;
@@ -101,7 +124,67 @@ line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyle
 ylabel('L(\Delta x)');
 xlabel('\Delta x');
 
-%% Plot 3: Logistic function multiplied by 
+%% Plot 3: Cable force multiplied by logisitic function
+
+% Given that the previous two sections were run, we can calculate the total force of
+% the logistically-smoothed cable at a point:
+
+smoothed_F = F.*logistic_func;
+
+% note that this is a pointwise multiplication of two (column?) vectors.
+
+% Plot this on a new graph.
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+
+% Plot the smoothed force.
+plot(dx, smoothed_F, 'k');
+
+handle = gca;
+% Plot the lines:
+line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+
+% Axis labels:
+ylabel('F_a(\Delta x)');
+xlabel('\Delta x');
+
+%% Plot 4: comparison of piecewise function and logistically smoothed function
+
+% Plot this on a new graph.
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+
+handle = gca;
+% Plot the lines:
+line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+
+% Rectified force: plot in red
+plot(dx, F_rect, 'r', 'LineWidth', 3);
+% Smoothed force: blue
+plot(dx, smoothed_F, 'b', 'LineWidth', 3);
+
+
+
+% Axis labels:
+ylabel('F_a(\Delta x)', 'FontSize',14);
+xlabel('\Delta x','FontSize',14);
+
+title('Cable Dynamics: Piecewise vs. Smooth');
+
+
+
+
+
+
+
 
 
 
