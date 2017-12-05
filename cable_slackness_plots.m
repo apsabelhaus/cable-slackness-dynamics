@@ -152,6 +152,66 @@ line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyle
 ylabel('F_a(\Delta x)');
 xlabel('\Delta x');
 
+%% Plot 3.5: Cable force (rectified) multiplied by the logistic function
+
+% This is a model for a "heavy" cable that always pulls in a bit even
+% after it's slack. Cite the civil engineering folks here.
+
+smoothed_F_heavy = F_rect.*logistic_func;
+
+% Plot this on a new graph.
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+
+% Plot the smoothed force.
+plot(dx, smoothed_F_heavy, 'k');
+
+handle = gca;
+% Plot the lines:
+line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+
+% Axis labels:
+ylabel('F_a(\Delta x)');
+xlabel('\Delta x');
+title('Heavier cable, non smooth');
+
+% ...actually, this isn't right either. We need a function that exists
+% in quadrants 1 and 2. Let's hack it together for now. Do the logistically
+% smoothed version for values greater than zero, and just the logistic
+% function for values less than zero. 
+
+F_heavy = smoothed_F_heavy;
+% adjust upwards all the positive entries. That's length/2 + 1 to end.
+% Hack: it's 0.5.
+logistic_offset = 0.5;
+F_heavy(length(F_heavy)/2 + 1 : end) = F_heavy(length(F_heavy)/2 + 1 : end) + logistic_offset;
+% Sub in the logistic function for the negative values.
+F_heavy(1: length(F_heavy)/2) = logistic_func(1 : length(logistic_func)/2);
+
+% Plot.
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+
+% Plot the smoothed force.
+plot(dx, F_heavy, 'k');
+
+handle = gca;
+% Plot the lines:
+line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+
+% Axis labels:
+ylabel('F_a(\Delta x)');
+xlabel('\Delta x');
+title('Heavier cable, non passive');
+
 %% Plot 4: comparison of piecewise function and logistically smoothed function
 
 % Plot this on a new graph.
@@ -170,12 +230,14 @@ line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyle
 plot(dx, F_rect, 'r', 'LineWidth', 3);
 % Smoothed force: blue
 plot(dx, smoothed_F, 'b', 'LineWidth', 3);
+% Heavier cable: magenta
+plot(dx, F_heavy, 'm', 'LineWidth', 3);
 
 
 
 % Axis labels:
-ylabel('F_a(\Delta x)', 'FontSize',14);
-xlabel('\Delta x','FontSize',14);
+ylabel('F_a(x)', 'FontSize',14);
+xlabel('F_c(x)','FontSize',14);
 
 title('Cable Dynamics: Piecewise vs. Smooth');
 
