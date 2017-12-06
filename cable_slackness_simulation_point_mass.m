@@ -20,19 +20,28 @@ A = [0 1; 0 0];
 B = [0; 1/m];
 % Pass through the whole system state. We're looking for the force
 % to smooth out the spring-damper part, k - c \dot x.
-C = [k, -c];
+C = [k, c];
 
 % to-do: need to specify direction of force u1. Maybe we get lazy
 % and just test it to see.
 
+% System interconnection.
+% Though we really only need the one element for now, let's specify it
+% in case we want to be fancier later.
+M = [0, -1; 1, 0];
+
 % Length of time to simulate, number of steps, initial condition.
 dt = 0.01; % sec
-t_max = 10; % sec
+%t_max = 5; % sec
+t_max = 1000;
 % a range of all the times is then
 t = 0:dt:t_max;
 
 % Initial condition:
-x0 = [ -0.1; -0.1]; % position, velocity
+%x0 = [-0.1; -0.1];
+%x0 = [ -0.1; 0.1]; % position, velocity
+x0 = [-0.1; 0.16]; % seems like 0.16 is stable for logisitic smoothing, 0.17 not stable... hmm I was thinking it would be stable for all? Maybe not?
+
 
 % For the forward euler integration, let's do smaller steps between
 % times in the simulation. Call this epsilon.
@@ -55,9 +64,17 @@ x_result(:,1) = x0;
 % length(t)-1.
 
 for i=1 : (length(t)-1)
-    % our input is
+    % DEBUGGING
+    %disp(strcat('t = ', num2str(t(i))));
+    % our input is the output of the cable model.
     % HERE IS WHERE WE'LL FEED BACK THE CABLE MODEL
-    u = 0;
+    % need to pass the linear system output through the cable model, Cx.
+    % Be fancier about using M. This is a silly way to get u1 = - y2.
+    %u = M(1,2) * linear_spring_damper( C * x_result(:,i) );
+    %u = M(1,2) * rectified_linear_spring_damper( C * x_result(:,i) );
+    u = M(1,2) * logistic_smoothed_spring_damper( C * x_result(:,i), ...
+        5, 0); % last two are beta and beta_0, copied from 'plots' script.
+    
     % Call the dynamics simulator
     x_result(:,i+1) = simulate_linear_dynamics(A, B, u, x_result(:,i), ...
            dt, eps);
