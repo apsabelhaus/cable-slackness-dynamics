@@ -33,7 +33,7 @@ M = [0, -1; 1, 0];
 % Length of time to simulate, number of steps, initial condition.
 dt = 0.01; % sec
 %t_max = 5; % sec
-t_max = 1000;
+t_max = 10;
 % a range of all the times is then
 t = 0:dt:t_max;
 
