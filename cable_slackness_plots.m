@@ -99,11 +99,32 @@ xlabel('\Delta x, cable stretch');
 logistic_k = 5;
 logistic_x0 = 0;
 
+% TO-DO: look at more general sigmoid functions. Is there one that goes
+% "negative" and then doesn't let a cable "push"?
+% Ideas include: 
+% (1) multiply the logistic(x)*F(x) by logistic(x) again. Since l(x)F(x)
+% "goes negative" maybe we can use that?
+% (2) what happens if we use another of the smooth sigmoid curves under
+% that wikipedia page?
+% (3) maybe we do logisitic(x) - small constant, and adjust the offset x0
+% accordingly so that it's still l(x)=0 at x=0? Motivation is that since
+% F(x) is negative less than zero, and then logistic(x) - small const is
+% also negative less than zero, then the product must be greater than or
+% equal to zero. BUT, we'd need a way to send the +x part back up to 1 in
+% the limit, otherwise we can't claim that this approximates the step
+% function (the limit will be off by the small constant.)
+
 % The logistic function in dx looks like
 % f(x) = 1 / (1 + exp( -k*(x-x0)))
 
 % To-do: do we need pointwise multiplication here?
-logistic_func = 1 ./ (1 + exp(-logistic_k*(dx - logistic_x0)));
+%logistic_func = 1 ./ (1 + exp(-logistic_k*(dx - logistic_x0)));
+% some small constant... BUT still need to adjust x0 probably??
+%logistic_func = 1 ./ (1 + exp(-logistic_k*(dx - logistic_x0))) - 0.1;
+% Result: doesn't work. The "negativeness" of the logistic - small const
+% accumulates, so the spring force actually really pulls more in x < 0,
+% e.g., we again cannot claim that the limits match the heaviside step
+% function.
 
 % Plot this on a new graph.
 figure();
