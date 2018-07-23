@@ -1,4 +1,4 @@
-% symbolically calculating the maximum slope of the logistic function. 
+% symbolically calculating the maximum slope of the logistic function.
 % Andrew P. Sabelhaus, 2019
 
 clear all;
@@ -126,6 +126,8 @@ eval(bound1_max)
 
 % which then is \alpha = 1 + bound1_max proof, so bound overall is
 % ...wait, do I do 1 + 1 + 0.278 or just 1 + 0.278??? maybe mistake.
+
+% See notebook for more...
 
 
 
