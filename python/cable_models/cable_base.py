@@ -52,14 +52,27 @@ class Cable(ABC):
             Pass in position only.
             Is implemented here, in super! """
         # length is just the 2-norm of the net vector b/w points.
-        net_vec = other_anchor_pos - self.anchor_pos
-        return np.linalg.norm(x=net_vec, ord=2)
+        pos_net_vec = other_anchor_pos - self.anchor_pos
+        return np.linalg.norm(pos_net_vec, 2)
     
     def calculate_d_length_dt(self, other_anchor_pos, other_anchor_vel):
         """ Same as calculate_length, but for cable length change.
             Needs both the position and change-in-position of the
-            other anchor point (I think? do this later?)
+            other anchor point
             Is implemented here, in super."""
-        print('not implemented yet.')
-        pass
+        #print('not implemented yet.')
+        # By using chain rule and partial deriv of 2-norm,
+        # change in length (d ||r|| / dt) is net velocity dotted
+        # with unit vector of position.
+        # First, get unit vec of position:
+        pos_net_vec = other_anchor_pos - self.anchor_pos
+        pos_net_vec_norm = np.linalg.norm(pos_net_vec, 2)
+        # \hat r  = r / ||r||
+        pos_unit_vec = pos_net_vec / pos_net_vec_norm
+        # some debugging
+        #print(pos_unit_vec)
+        # Since self.anchor_pos is not moving, it has zero
+        # velocity, therefore net velocity is just the velocity
+        # of the other anchor point.
+        return np.dot(pos_unit_vec, other_anchor_vel)
 

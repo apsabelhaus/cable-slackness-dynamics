@@ -16,5 +16,5 @@ linear_cable_params = {'k':1, 'c':1}
 cable1_anchor = np.array([0, 0])
 
 cable1 = cable_linear.LinearCable(params = linear_cable_params, 
-                            anchor_pos = cable1_anchor)
+                                  anchor_pos = cable1_anchor)
 
