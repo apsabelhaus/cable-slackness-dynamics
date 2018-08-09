@@ -46,3 +46,12 @@ print(cable1_vel_faster)
 # we can also think through what the length change
 # should be if the cable is being pulled at a 45 degree angle.
 # ...do this later
+
+# To-do: test dimensionality here. 
+# Do the cable functions work generally enough for 1D through 3D?
+
+# Let's do a force.
+anchor1_state = np.concatenate((other_anchor1, other_anchor_vel1))
+# zero rest length for now.
+control_input = 0
+cable1_force = cable1.calculate_force(anchor1_state, control_input)

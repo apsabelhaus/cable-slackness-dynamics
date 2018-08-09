@@ -38,9 +38,17 @@ class Cable(ABC):
 
     # the force calculation must be done per-cable.
     @abstractmethod
-    def calculate_force(self, cable_state, input):
+    def calculate_force(self, anchor_state, control_input):
         """ Outputs force based on the control input and
-            calculated cable state (length, d_length, calc'd elsewhere).
+            the state of the moving anchor (the attachment point),
+            which implies that this function should (almost certainly)
+            be calling calculate_length etc. to do its calculations.
+            In: anchor_state is a 2-vec, first elem pos, second elem
+            vel. Each component is in \mathbb{R}^1, 2, or 3 depending on
+            if we're simulating 1D, 2D, 3D cable.
+            ALSO, note we're doing this 'passivity-style', as in,
+            a positive force returned, not a negative. 
+            Example, F = k \delta x, not F = -k \delta x
             Is abstract, must implement."""
         pass
 
