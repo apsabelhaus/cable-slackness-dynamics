@@ -52,6 +52,15 @@ class Cable(ABC):
             Is abstract, must implement."""
         pass
 
+    # a helper method: in order to determine the dimensionality of the 
+    # problem (a 1D, 2D, or 3D cable), we can calculate the size of
+    # the anchor_state variable. Since each dimension has pos and vel,
+    # the dimensionality has to be either 2, 4, or 6. This function
+    # returns just the constant 2, 4, 6 with a bit of checking.
+    # Can be done just with self, actually, since anchor_pos is exactly
+    # the dimensionality of the problem!
+    def get_dimensionality(self):
+        return np.size(self.anchor_pos)
 
     def calculate_length(self, other_anchor_pos):
         """ A geometric calculation of the cable's length
@@ -60,6 +69,7 @@ class Cable(ABC):
             Pass in position only.
             Is implemented here, in super! """
         # length is just the 2-norm of the net vector b/w points.
+        # NOTE that this is NOT a signed distance! Magnitude!
         pos_net_vec = other_anchor_pos - self.anchor_pos
         return np.linalg.norm(pos_net_vec, 2)
     
@@ -77,8 +87,6 @@ class Cable(ABC):
         pos_net_vec_norm = np.linalg.norm(pos_net_vec, 2)
         # \hat r  = r / ||r||
         pos_unit_vec = pos_net_vec / pos_net_vec_norm
-        # some debugging
-        #print(pos_unit_vec)
         # Since self.anchor_pos is not moving, it has zero
         # velocity, therefore net velocity is just the velocity
         # of the other anchor point.
