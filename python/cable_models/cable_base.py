@@ -10,7 +10,7 @@ so there's one (not-moving) anchor point and one moving
 attachment point.
 The superclass specifies inputs and outputs:
     Constructor takes parameters and anchor point
-    The calculate_force function takes in the moving anchor point state
+    The calculate_force_scalar function takes in the moving anchor point state
         (e.g. position and velocity) and uses calculate_length etc. 
         as helpers. Returns force.
     Various helper functions return e.g. lengths, change in lengths (in continuous
@@ -38,7 +38,7 @@ class Cable(ABC):
 
     # the force calculation must be done per-cable.
     @abstractmethod
-    def calculate_force(self, anchor_state, control_input):
+    def calculate_force_scalar(self, anchor_state, control_input):
         """ Outputs force based on the control input and
             the state of the moving anchor (the attachment point),
             which implies that this function should (almost certainly)
@@ -52,6 +52,20 @@ class Cable(ABC):
             Is abstract, must implement."""
         pass
 
+    # ...however, this base class CAN project the force into its
+    # n-dimensional space. Since calculate_force_scalar returns a scalar.
+    def calculate_force_nd(self, anchor_state, control_input):
+        # first, get the scalar force
+        F = self.calculate_force_scalar(anchor_state, control_input)
+        # Then, pull out the position from the anchor state.
+        # LinearCable has more info about this calculation.
+        d = self.get_dimensionality()
+        other_anchor_pos = anchor_state[0:d]
+        # now, we can get the unit vec:
+        unit_vec = self.get_dir_vec(other_anchor_pos)
+        # and finally, dot the two.
+        return np.dot(unit_vec, F)
+
     # a helper method: in order to determine the dimensionality of the 
     # problem (a 1D, 2D, or 3D cable), we can calculate the size of
     # the anchor_state variable. Since each dimension has pos and vel,
@@ -61,6 +75,16 @@ class Cable(ABC):
     # the dimensionality of the problem!
     def get_dimensionality(self):
         return np.size(self.anchor_pos)
+
+    # a helper. Gets the unit vector between the two anchors,
+    # used for calculating the n-dimensional force (scalar times unit vec.)
+    # and as part of the chain rule for velocity.
+    def get_dir_vec(self, other_anchor_pos):
+        # unit vector is \hat r  = r / ||r||
+        pos_net_vec = other_anchor_pos - self.anchor_pos
+        pos_net_vec_norm = np.linalg.norm(pos_net_vec, 2)
+        # \hat r  = r / ||r||
+        return pos_net_vec / pos_net_vec_norm
 
     def calculate_length(self, other_anchor_pos):
         """ A geometric calculation of the cable's length
@@ -78,15 +102,15 @@ class Cable(ABC):
             Needs both the position and change-in-position of the
             other anchor point
             Is implemented here, in super."""
-        #print('not implemented yet.')
         # By using chain rule and partial deriv of 2-norm,
         # change in length (d ||r|| / dt) is net velocity dotted
-        # with unit vector of position.
+        # with unit vector of position. (n-dim vec \dot n-dim vec => scalar).
         # First, get unit vec of position:
-        pos_net_vec = other_anchor_pos - self.anchor_pos
-        pos_net_vec_norm = np.linalg.norm(pos_net_vec, 2)
+        #pos_net_vec = other_anchor_pos - self.anchor_pos
+        #pos_net_vec_norm = np.linalg.norm(pos_net_vec, 2)
         # \hat r  = r / ||r||
-        pos_unit_vec = pos_net_vec / pos_net_vec_norm
+        #pos_unit_vec = pos_net_vec / pos_net_vec_norm
+        pos_unit_vec = self.get_dir_vec(other_anchor_pos)
         # Since self.anchor_pos is not moving, it has zero
         # velocity, therefore net velocity is just the velocity
         # of the other anchor point.

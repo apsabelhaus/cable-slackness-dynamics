@@ -9,6 +9,7 @@ import numpy as np
 # for the cables and other things we write,
 # let's make it so we don't need to use the module name
 from cable_models import *
+from body_models import *
 
 # Parameters for the cables are going to be a dict.
 linear_cable_params = {'k':1, 'c':1}

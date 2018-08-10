@@ -10,7 +10,7 @@ from cable_models import cable_base
 # simplest example: linear spring-damper.
 class LinearCable(cable_base.Cable):
 
-    def calculate_force(self, anchor_state, control_input):
+    def calculate_force_scalar(self, anchor_state, control_input):
         """ linear spring force, linear damping force. 
             Input is rest length.
             See super for anchor_state discussion."""

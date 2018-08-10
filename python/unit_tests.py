@@ -19,9 +19,9 @@ linear_cable_params = {'k':1, 'c':1}
 # anchor point at another location, such that the velocity is
 # acting against the spring force.
 # 2D:
-#cable1_anchor = np.array([6, 8])
+cable1_anchor = np.array([6, 8])
 # 1D:
-cable1_anchor = np.array([2])
+#cable1_anchor = np.array([2])
 
 cable1 = cable_linear.LinearCable(params = linear_cable_params, 
                                   anchor_pos = cable1_anchor)
@@ -33,16 +33,16 @@ Tests:
 # cable length change.
 # a test position and velocity of point:
 # 2D:
-#other_anchor1 = np.array([3, 4])
+other_anchor1 = np.array([3, 4])
 # 1D:
-other_anchor1 = np.array([7])
+#other_anchor1 = np.array([7])
 # with the other anchor point moving along the vector of the
 # cable (e.g. 'pulling directly outward',) the cable length
 # change (velocity) should be equal to 1.
 # 2D:
-#other_anchor_vel1 = np.array([0.6, 0.8])
+other_anchor_vel1 = np.array([0.6, 0.8])
 # 1D:
-other_anchor_vel1 = np.array([-1])
+#other_anchor_vel1 = np.array([-1])
 
 cable1_vel = cable1.calculate_d_length_dt(other_anchor1, 
                                           other_anchor_vel1)
@@ -67,7 +67,7 @@ print(cable1_vel_faster)
 anchor1_state = np.concatenate((other_anchor1, other_anchor_vel1))
 # zero rest length for now.
 control_input = 0
-cable1_force = cable1.calculate_force(anchor1_state, control_input)
+cable1_force = cable1.calculate_force_scalar(anchor1_state, control_input)
 
 # If length change velocity is in -length direction, but 
 # stretch is positive (e.g., ||r|| > control_input),
@@ -79,7 +79,7 @@ cable1_force = cable1.calculate_force(anchor1_state, control_input)
 
 # So let's try with a control input equal to the spring length:
 control_input2 = 5
-cable1_force_control2 = cable1.calculate_force(anchor1_state, control_input2)
+cable1_force_control2 = cable1.calculate_force_scalar(anchor1_state, control_input2)
 
 # and finally, with a control input greater than rest length
 # (spring is "pushing" not "pulling")
@@ -87,7 +87,7 @@ cable1_force_control2 = cable1.calculate_force(anchor1_state, control_input2)
 #  work within the framework of passivity. It's up to the pointmass
 #  or rigid body to subtract these forces.)
 control_input3 = 6
-cable1_force_control3 = cable1.calculate_force(anchor1_state, control_input3)
+cable1_force_control3 = cable1.calculate_force_scalar(anchor1_state, control_input3)
 
 # As of 2018-08-10, verified that LinearCable passes these intuitive
 # tests in 1 and 2 dimensions.
