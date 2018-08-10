@@ -11,6 +11,7 @@ import numpy as np
 # for the cables and other things we write,
 # let's make it so we don't need to use the module name
 from cable_models import *
+from body_models import *
 
 # Parameters for the cables are going to be a dict.
 linear_cable_params = {'k':1, 'c':1}
@@ -47,14 +48,14 @@ other_anchor_vel1 = np.array([0.6, 0.8])
 cable1_vel = cable1.calculate_d_length_dt(other_anchor1, 
                                           other_anchor_vel1)
 
-print(cable1_vel)
+#print(cable1_vel)
 
 # similarly, if we keep that 'pulling directly outward'
 # but with a larger velocity, should scale:
 cable1_vel_faster = cable1.calculate_d_length_dt(other_anchor1,
                                                  2*other_anchor_vel1)
 
-print(cable1_vel_faster)
+#print(cable1_vel_faster)
 
 # we can also think through what the length change
 # should be if the cable is being pulled at a 45 degree angle.
@@ -92,3 +93,26 @@ cable1_force_control3 = cable1.calculate_force_scalar(anchor1_state, control_inp
 # As of 2018-08-10, verified that LinearCable passes these intuitive
 # tests in 1 and 2 dimensions.
 
+# next, tests for the point mass:
+m = 1.45
+g = 9.8
+# 2D:
+#pm_pos = np.array([1, 1])
+#pm_vel = np.array([0, 0])
+# 1D:
+pm_pos = np.array([1])
+pm_vel = np.array([0])
+pm = point_mass.PointMass(m, g, pm_pos, pm_vel)
+
+# a list of arbitrary forces
+forces_list = []
+# in 2D:
+#forces_list.append(np.array([0.5, 0.2]))
+#forces_list.append(np.array([0.3, 2]))
+# in 1D:
+forces_list.append(np.array([0.5]))
+forces_list.append(np.array([0.3]))
+
+# what's the sum, and acceleration for this point mass?
+sum_forces_pm = pm.calculate_sum_forces(forces_list)
+accel_pm = pm.calculate_accel(sum_forces_pm)
