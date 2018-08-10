@@ -5,13 +5,15 @@ Primary script for cable slackness dynamics simulations.
 
 # import everything we need
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 # for the cables and other things we write,
 # let's make it so we don't need to use the module name
 from cable_models import *
 from body_models import *
 
 # Parameters for the cables are going to be a dict.
-linear_cable_params = {'k':1, 'c':1}
+linear_cable_params = {'k':100, 'c':5}
 # anchor point for cable 1 at some offset.
 cable1_anchor = np.array([2])
 # create the cable
@@ -98,7 +100,17 @@ for t in range(num_timesteps):
         # append the force from this cable.
         # BE CAREFUL that the control input vector is the same size
         # as the number of cables!
-        force_i = cables[i].calculate_force_nd(pm_state, control[i])
+        
+        ### IMPORTANT: 
+        # Here is where the sign is flipped for cable forces.
+        # The equations of motion, as written usually, would have
+        # the output of calculate_force be negative. 
+        # However, in order to be consistent with passivity,
+        # we apply the negative sign here.
+        # See, for example, the nonlinear passive spring proof
+        # in Sastry's Nonlinear Systems textbook, where the spring
+        # force is g(x), and the equations of motion include -g(x).
+        force_i = -cables[i].calculate_force_nd(pm_state, control[i])
         forces_list.append(force_i)
     
     # The point mass can then calculate its \dot x
@@ -116,4 +128,7 @@ for t in range(num_timesteps):
     pm_state_history[t+1] = pm_state_tp1
     # end.
 
-
+# Let's plot the results!
+fig, ax = plt.subplots()
+ax.plot(pm_state_history[:,1])
+plt.show()
