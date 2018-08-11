@@ -15,7 +15,10 @@ from body_models import *
 # Parameters for the cables are going to be a dict.
 linear_cable_params = {'k':100, 'c':5}
 # anchor point for cable 1 at some offset.
+# 1D:
 cable1_anchor = np.array([2])
+# 2D:
+#cable1_anchor = np.array([2,2])
 # create the cable
 cable1 = cable_linear.LinearCable(params = linear_cable_params, 
                                   anchor_pos = cable1_anchor)
@@ -26,16 +29,23 @@ cables = [cable1]
 
 # create the point mass.
 m = 1.45
-g = 9.8
+#g = 9.8
+g = 0.0
 # 1D:
-pm_pos_initial = np.array([1])
+# example: for a cable anchor at x=2,
+# an initial position of 0, 
+# and a control input of 1, then the system equilibrizes around 1
+pm_pos_initial = np.array([1.5])
 pm_vel_initial = np.array([0])
+# 2D:
+#pm_pos_initial = np.array([0,0])
+#pm_vel_initial = np.array([0,0])
 pm = point_mass.PointMass(m, g, pm_pos_initial, pm_vel_initial)
 
 # Let's create a range of timesteps for the simulation.
 # really, don't change the start time from 0, that's meaningless unless
 # it's easier than doing some offset after another simulation.
-t_start = 0 
+t_start = 0.0 
 # let's specify a dt and number of timesteps, in sec
 # (let's do maybe 1/100th of a sec, 100 Hz for integration is fine for now)
 # Then, the range of times will be:
@@ -47,6 +57,10 @@ num_timesteps = 500
 #dt = t_end / num_timesteps
 # NOTE: we're vaguely off-by-one here. Drew is more used to MATLAB, so
 # dt isn't an even number (needs to be num_timesteps+1 for even division)
+
+# for use later when plotting, make a big vector of all the timesteps
+# like described above, this includes 0, so we need to increment
+timesteps = np.arange(t_start, dt*(num_timesteps+1), dt)
 
 # We need to save the results of the system state, over time.
 # This needs to be a 2*d-dimensional by timestep problem
@@ -129,6 +143,32 @@ for t in range(num_timesteps):
     # end.
 
 # Let's plot the results!
+# The timesteps are:
+
 fig, ax = plt.subplots()
-ax.plot(pm_state_history[:,1])
+# REMEMBER THAT PYTHON INDEXES FROM 0
+# 2D:
+#ax.plot(pm_state_history[:,0], pm_state_history[:,1])
+# 1D:
+ax.plot(timesteps, pm_state_history[:,0])
 plt.show()
+# as of 2018-08-10:
+# the 1D case works as expected, with the observation that
+#   there are multiple equilibria in this model, technically:
+#   if the point mass starts on "one side" of the anchor, it 
+#   converges to that "side's" equiibrium with the offset in rest
+#   position from the control input. If "other side," then opposite.
+#   Example: at anchor = 2, and control_input = 4, two behaviors:
+#   if initial_pos > 2, then converges to x = 6, 
+#   but if initial_pos < 2, then converges to x = -2.
+#   There's an odd behavior in 1D where the cable "flips around."
+#   That doesn't apply to 2D or 3D, where there is no concept
+#   of "the other side of the cable," so this is really just
+#   expected behavior. A spring-damper can be a nonlinear system,
+#   who'd have thought?
+# But doesn't work for 2D case just yet.
+# two observations: (is pm_history the right size? seems wrong.)
+# (1) without gravity, system converges.
+# (2) system converges to the *wrong* equilibrium position?
+#       seems like it converges to [2,0] not [2,2].
+#       this might be occurring in 1D also...
