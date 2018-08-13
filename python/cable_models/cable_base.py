@@ -86,6 +86,17 @@ class Cable(ABC):
         # \hat r  = r / ||r||
         return pos_net_vec / pos_net_vec_norm
 
+    # a helper. Takes in state and parses according to dimensionality,
+    # so the caller doesn't have to bother with indexing into the state to
+    # get the cable position.
+    def calculate_length_from_state(self, other_anchor_state):
+        # we need to check the dimensionality
+        # here. 
+        d = self.get_dimensionality()
+        # ...because we can then figure out how to index into the state
+        # A point mass has d positions and d velocities for a d-dimensional space.
+        return other_anchor_state[0 : d]
+
     def calculate_length(self, other_anchor_pos):
         """ A geometric calculation of the cable's length
             based on anchor (saved in object) and other_anchor

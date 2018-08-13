@@ -15,6 +15,9 @@ from body_models import *
 # Parameters for the cables are going to be a dict.
 linear_cable_params1 = {'k':300, 'c':10}
 linear_cable_params2 = {'k':100, 'c':10}
+# For later, turn this into a list by cable number.
+# TO-DO: make more robust!!!
+linear_cable_params_list = [linear_cable_params1, linear_cable_params2]
 
 # anchor point for cable 1 at some offset.
 # 1D:
@@ -51,6 +54,11 @@ cables = [cable1, cable2]
 # testing: one hybrid cable
 #cables = [cable2]
 
+# Pre-calculated values for the equilibrium cable forces at a 
+# desired x_eq. Use (for example) inverse kinematics here for larger N-D
+# tensegrities.
+pretensions = [300.0, 300.0]
+
 # create the point mass.
 m = 1.45
 #g = 9.8
@@ -59,7 +67,7 @@ g = 0.0
 # example: for a cable anchor at x=2,
 # an initial position of 0, 
 # and a control input of 1, then the system equilibrizes around 1
-pm_pos_initial = np.array([3])
+pm_pos_initial = np.array([5])
 pm_vel_initial = np.array([0])
 # 2D:
 #pm_pos_initial = np.array([0,0])
@@ -119,7 +127,16 @@ for t in range(num_timesteps):
     # hard coded for now: for n cables, need n inputs.
     # do it as an ndarray so we can index into it.
     # rest length of 0, for example
-    control = np.array([4, 4])
+    #control = np.array([4, 4])
+
+    # Closed loop control law:
+    # u_i = k_i * l_i - Pretension_i
+    # *NOTE*, you need to check the bounds on actuator saturation for 
+    # this control to be valid. This example would be applying
+    # a negative control input outside the bounds of [2.333, 7],
+    # which is not possible (cables can't have negative rest length.)
+    
+    # Iterate through cables to get their lengths (as part of later loop:)
 
     # Get the current point mass state, for use in calculating the
     # cable force(s).
@@ -139,6 +156,17 @@ for t in range(num_timesteps):
         # append the force from this cable.
         # BE CAREFUL that the control input vector is the same size
         # as the number of cables!
+
+        # calculate the control input for this cable based on its length.
+        # pull out the spring const for ease
+        k_i = linear_cable_params_list[i]['k']
+        # length calulated by cable
+        l_i = cables[i].calculate_length_from_state(pm_state)
+        # CONTROL LAW
+        control = (k_i * l_i) - pretensions[i]
+
+        #debugging
+        print(control)
         
         ### IMPORTANT: 
         # Here is where the sign is flipped for cable forces.
@@ -149,12 +177,12 @@ for t in range(num_timesteps):
         # See, for example, the nonlinear passive spring proof
         # in Sastry's Nonlinear Systems textbook, where the spring
         # force is g(x), and the equations of motion include -g(x).
-        force_i = -cables[i].calculate_force_nd(pm_state, control[i])
+        force_i = -cables[i].calculate_force_nd(pm_state, control)
         #print(force_i)
         forces_list.append(force_i)
     
     #debugging
-    #print(forces_list)
+    print(forces_list)
     # The point mass can then calculate its \dot x
     # (as in, \dot x = f(x, u), really just the vel and accel in one vec.)
     pm_state_deriv = pm.state_deriv(forces_list)
