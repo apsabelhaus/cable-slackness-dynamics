@@ -16,16 +16,23 @@ from body_models import *
 linear_cable_params = {'k':100, 'c':5}
 # anchor point for cable 1 at some offset.
 # 1D:
-cable1_anchor = np.array([2])
+cable1_anchor = np.array([8])
 # 2D:
 #cable1_anchor = np.array([2,2])
-# create the cable
+
+# Add a second cable.
+cable2_anchor = np.array([2])
+
+# create the cables
 cable1 = cable_linear.LinearCable(params = linear_cable_params, 
-                                  anchor_pos = cable1_anchor)
+                                    anchor_pos = cable1_anchor)
+cable2 = cable_linear.LinearCable(params = linear_cable_params,
+                                    anchor_pos = cable2_anchor)                                  
+
 
 # For consistency with more general simulations,
-# make a list of cables (though we only have one right now.)
-cables = [cable1]
+# make a list of cables
+cables = [cable1, cable2]
 
 # create the point mass.
 m = 1.45
@@ -35,7 +42,7 @@ g = 0.0
 # example: for a cable anchor at x=2,
 # an initial position of 0, 
 # and a control input of 1, then the system equilibrizes around 1
-pm_pos_initial = np.array([1.5])
+pm_pos_initial = np.array([3.5])
 pm_vel_initial = np.array([0])
 # 2D:
 #pm_pos_initial = np.array([0,0])
@@ -91,10 +98,10 @@ for t in range(num_timesteps):
     # placing the control declaration here reminds us that it goes here
     # also later when the control law is implemented.
     
-    # hard coded for now: one cable, one input.
+    # hard coded for now: for n cables, need n inputs.
     # do it as an ndarray so we can index into it.
     # rest length of 0, for example
-    control = np.array([0])
+    control = np.array([0, 0])
 
     # Get the current point mass state, for use in calculating the
     # cable force(s).
@@ -125,6 +132,7 @@ for t in range(num_timesteps):
         # in Sastry's Nonlinear Systems textbook, where the spring
         # force is g(x), and the equations of motion include -g(x).
         force_i = -cables[i].calculate_force_nd(pm_state, control[i])
+        print(force_i)
         forces_list.append(force_i)
     
     # The point mass can then calculate its \dot x
