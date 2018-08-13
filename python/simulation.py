@@ -13,7 +13,9 @@ from cable_models import *
 from body_models import *
 
 # Parameters for the cables are going to be a dict.
-linear_cable_params = {'k':100, 'c':5}
+linear_cable_params1 = {'k':300, 'c':10}
+linear_cable_params2 = {'k':100, 'c':10}
+
 # anchor point for cable 1 at some offset.
 # 1D:
 cable1_anchor = np.array([8])
@@ -24,15 +26,30 @@ cable1_anchor = np.array([8])
 cable2_anchor = np.array([2])
 
 # create the cables
-cable1 = cable_linear.LinearCable(params = linear_cable_params, 
+# Brief description of classes:
+# LinearCable is spring-damper, the usual from undergrad diffeq
+# HybridLinearCable is spring-damper, rectified with 0 as per NTRT and Skelton.
+# HybridSplitLinearCable is the model we're proposing, with individual
+# checks on the spring force and the damping force, with the damping also
+# rectified to only be + when spring is in tension (otherwise unrealistic - 
+# would apply a potentially 'big' force when intuitively slack! We don't
+# want to consider visoelasticity here.)
+
+# cable1 = cable_linear.LinearCable(params = linear_cable_params, 
+#                                     anchor_pos = cable1_anchor)
+# cable2 = cable_linear.LinearCable(params = linear_cable_params,
+#                                     anchor_pos = cable2_anchor)       
+cable1 = cable_hybrid.HybridSplitLinearCable(params = linear_cable_params1, 
                                     anchor_pos = cable1_anchor)
-cable2 = cable_linear.LinearCable(params = linear_cable_params,
-                                    anchor_pos = cable2_anchor)                                  
+cable2 = cable_hybrid.HybridSplitLinearCable(params = linear_cable_params2,
+                                    anchor_pos = cable2_anchor)                                                                    
 
 
 # For consistency with more general simulations,
 # make a list of cables
 cables = [cable1, cable2]
+# testing: one hybrid cable
+#cables = [cable2]
 
 # create the point mass.
 m = 1.45
@@ -42,7 +59,7 @@ g = 0.0
 # example: for a cable anchor at x=2,
 # an initial position of 0, 
 # and a control input of 1, then the system equilibrizes around 1
-pm_pos_initial = np.array([3.5])
+pm_pos_initial = np.array([3])
 pm_vel_initial = np.array([0])
 # 2D:
 #pm_pos_initial = np.array([0,0])
@@ -57,7 +74,8 @@ t_start = 0.0
 # (let's do maybe 1/100th of a sec, 100 Hz for integration is fine for now)
 # Then, the range of times will be:
 dt = 0.01
-num_timesteps = 500
+#num_timesteps = 500
+num_timesteps = 3000
 #timesteps = np.linspace(t_start, t_end, num_timesteps)
 # For later (numerical integration), we need the timestep itself.
 # Maybe there's a better way to do this in the future.
@@ -101,7 +119,7 @@ for t in range(num_timesteps):
     # hard coded for now: for n cables, need n inputs.
     # do it as an ndarray so we can index into it.
     # rest length of 0, for example
-    control = np.array([0, 0])
+    control = np.array([4, 4])
 
     # Get the current point mass state, for use in calculating the
     # cable force(s).
@@ -132,9 +150,11 @@ for t in range(num_timesteps):
         # in Sastry's Nonlinear Systems textbook, where the spring
         # force is g(x), and the equations of motion include -g(x).
         force_i = -cables[i].calculate_force_nd(pm_state, control[i])
-        print(force_i)
+        #print(force_i)
         forces_list.append(force_i)
     
+    #debugging
+    #print(forces_list)
     # The point mass can then calculate its \dot x
     # (as in, \dot x = f(x, u), really just the vel and accel in one vec.)
     pm_state_deriv = pm.state_deriv(forces_list)
