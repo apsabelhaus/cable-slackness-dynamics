@@ -19,6 +19,15 @@ linear_cable_params2 = {'k':100, 'c':10}
 # TO-DO: make more robust!!!
 linear_cable_params_list = [linear_cable_params1, linear_cable_params2]
 
+# For feedback control, declare some proportionality constants.
+# One for each cable, for now (two distributed controllers.)
+kappa = np.array([15, 15])
+
+# Also, for controller, we need to specify a point to stabilize around.
+# Assuming the anchors below (8 and 2), stabilizing around 6.5 (within [5 7])
+# leads to equilibrium cable lengths of
+l_eq = [1.5, 4.5]
+
 # anchor point for cable 1 at some offset.
 # 1D:
 cable1_anchor = np.array([8])
@@ -72,7 +81,9 @@ g = 0.0
 # would command a negative rest length outside those bounds.)
 # In future: need to check 
 pm_pos_initial = np.array([5.5])
-pm_vel_initial = np.array([0])
+#pm_pos_initial = np.array([6.2])
+#pm_vel_initial = np.array([0])
+pm_vel_initial = np.array([10])
 # 2D:
 #pm_pos_initial = np.array([0,0])
 #pm_vel_initial = np.array([0,0])
@@ -86,8 +97,8 @@ t_start = 0.0
 # (let's do maybe 1/100th of a sec, 100 Hz for integration is fine for now)
 # Then, the range of times will be:
 dt = 0.01
-num_timesteps = 500
-#num_timesteps = 3000
+#num_timesteps = 500
+num_timesteps = 3000
 #timesteps = np.linspace(t_start, t_end, num_timesteps)
 # For later (numerical integration), we need the timestep itself.
 # Maybe there's a better way to do this in the future.
@@ -133,15 +144,6 @@ for t in range(num_timesteps):
     # rest length of 0, for example
     #control = np.array([4, 4])
 
-    # Closed loop control law:
-    # u_i = l_i - (1/k_i) * Pretension_i
-    # *NOTE*, you need to check the bounds on actuator saturation for 
-    # this control to be valid. This example would be applying
-    # a negative control input outside the bounds of [2.333, 7],
-    # which is not possible (cables can't have negative rest length.)
-    
-    # Iterate through cables to get their lengths (as part of later loop:)
-
     # Get the current point mass state, for use in calculating the
     # cable force(s).
     pm_state = pm.get_state()
@@ -164,8 +166,22 @@ for t in range(num_timesteps):
         k_i = linear_cable_params_list[i]['k']
         # length calulated by cable
         l_i = cables[i].calculate_length_from_state(pm_state)
+        
         # CONTROL LAW
-        control = l_i - (1/k_i) * pretensions[i]
+
+        # Feedback cancellation: always apply equilibrium force:
+        #control = l_i - (1/k_i) * pretensions[i]
+
+        # *NOTE*, you need to check the bounds on actuator saturation for 
+        # this control to be valid. This example would be applying
+        # a negative control input outside the bounds of [5, 7],
+        # which is not possible (cables can't have negative rest length.)
+
+        # Feedback with proportional term: (see Drew's notes)
+        # control = \alpha_i * l_i + \beta_i
+        alpha_i = 1 - (kappa[i] / k_i)
+        beta_i = (1/k_i) * ((kappa[i] * l_eq[i]) - pretensions[i])
+        control = alpha_i * l_i + beta_i
 
         #debugging
         print('Length and control input for cable ' + str(i))
@@ -211,6 +227,12 @@ fig, ax = plt.subplots()
 #ax.plot(pm_state_history[:,0], pm_state_history[:,1])
 # 1D:
 ax.plot(timesteps, pm_state_history[:,0])
+# labels
+ax.set(xlabel='Time (sec)', ylabel='Mass position (m)', 
+    title='Closed-loop slack cable control results')
+ax.grid()
+# make a line at the equilibrium position
+#ax.axhline(y=6.5, label='Equilibrium position')
 plt.show()
 # as of 2018-08-10:
 # the 1D case works as expected, with the observation that
