@@ -67,7 +67,11 @@ g = 0.0
 # example: for a cable anchor at x=2,
 # an initial position of 0, 
 # and a control input of 1, then the system equilibrizes around 1
-pm_pos_initial = np.array([5])
+# NOTE: With the control law as of 2018-08-17, actuator saturation occurs
+# outside of the interval [5, 7] in point mass position (e.g., the controller
+# would command a negative rest length outside those bounds.)
+# In future: need to check 
+pm_pos_initial = np.array([5.5])
 pm_vel_initial = np.array([0])
 # 2D:
 #pm_pos_initial = np.array([0,0])
@@ -82,8 +86,8 @@ t_start = 0.0
 # (let's do maybe 1/100th of a sec, 100 Hz for integration is fine for now)
 # Then, the range of times will be:
 dt = 0.01
-#num_timesteps = 500
-num_timesteps = 3000
+num_timesteps = 500
+#num_timesteps = 3000
 #timesteps = np.linspace(t_start, t_end, num_timesteps)
 # For later (numerical integration), we need the timestep itself.
 # Maybe there's a better way to do this in the future.
@@ -130,7 +134,7 @@ for t in range(num_timesteps):
     #control = np.array([4, 4])
 
     # Closed loop control law:
-    # u_i = k_i * l_i - Pretension_i
+    # u_i = l_i - (1/k_i) * Pretension_i
     # *NOTE*, you need to check the bounds on actuator saturation for 
     # this control to be valid. This example would be applying
     # a negative control input outside the bounds of [2.333, 7],
@@ -140,8 +144,6 @@ for t in range(num_timesteps):
 
     # Get the current point mass state, for use in calculating the
     # cable force(s).
-    pm_pos = pm.get_pos()
-    pm_vel = pm.get_vel()
     pm_state = pm.get_state()
 
     # Have each cable calculate its force.
@@ -163,9 +165,11 @@ for t in range(num_timesteps):
         # length calulated by cable
         l_i = cables[i].calculate_length_from_state(pm_state)
         # CONTROL LAW
-        control = (k_i * l_i) - pretensions[i]
+        control = l_i - (1/k_i) * pretensions[i]
 
         #debugging
+        print('Length and control input for cable ' + str(i))
+        print(l_i)
         print(control)
         
         ### IMPORTANT: 
@@ -182,6 +186,7 @@ for t in range(num_timesteps):
         forces_list.append(force_i)
     
     #debugging
+    print('Forces at timestep ' + str(t))
     print(forces_list)
     # The point mass can then calculate its \dot x
     # (as in, \dot x = f(x, u), really just the vel and accel in one vec.)
@@ -199,7 +204,6 @@ for t in range(num_timesteps):
     # end.
 
 # Let's plot the results!
-# The timesteps are:
 
 fig, ax = plt.subplots()
 # REMEMBER THAT PYTHON INDEXES FROM 0
@@ -228,3 +232,8 @@ plt.show()
 # (2) system converges to the *wrong* equilibrium position?
 #       seems like it converges to [2,0] not [2,2].
 #       this might be occurring in 1D also...
+# as of 2018-07-17:
+#   the control law gives stability in the sense of Lyapunov... since the 
+#   point mass doesn't move (d'oh). We've done this so that the forces cancel,
+#   and the robot thus always remains in a new equilibrium at that state.
+#   Instead, maybe feed back the error signal with a proportional term?

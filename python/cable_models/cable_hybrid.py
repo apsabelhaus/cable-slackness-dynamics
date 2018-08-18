@@ -22,6 +22,8 @@ class HybridLinearCable(cable_base.Cable):
             But, passed through max(force, 0) to rectify the (final)
             output force.
             See super for anchor_state discussion."""
+        # NEED TO DO: MODEL ACTUATOR SATURATION!!!!!!
+        # WE CAN'T ACT ON A control_input < 0 !!!!
         # Split the anchor state up according to the dimensionality
         # of the problem: 1,2,3D means anchor state has 2,4,6 vars
         # (assuming the x...z positions come first.)
@@ -80,6 +82,8 @@ class HybridSplitLinearCable(cable_base.Cable):
             Input is rest length.
             But, various components passed through max(force, 0). 
             See super for anchor_state discussion."""
+        # NEED TO DO: MODEL ACTUATOR SATURATION!!!!!!
+        # WE CAN'T ACT ON A control_input < 0 !!!!
         # Split the anchor state up according to the dimensionality
         # of the problem: 1,2,3D means anchor state has 2,4,6 vars
         # (assuming the x...z positions come first.)

@@ -95,7 +95,7 @@ class Cable(ABC):
         d = self.get_dimensionality()
         # ...because we can then figure out how to index into the state
         # A point mass has d positions and d velocities for a d-dimensional space.
-        return other_anchor_state[0 : d]
+        return self.calculate_length(other_anchor_state[0 : d])
 
     def calculate_length(self, other_anchor_pos):
         """ A geometric calculation of the cable's length
