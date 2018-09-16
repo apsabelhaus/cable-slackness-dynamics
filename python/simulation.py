@@ -80,10 +80,13 @@ g = 0.0
 # outside of the interval [5, 7] in point mass position (e.g., the controller
 # would command a negative rest length outside those bounds.)
 # In future: need to check 
-pm_pos_initial = np.array([5.5])
-#pm_pos_initial = np.array([6.2])
-#pm_vel_initial = np.array([0])
-pm_vel_initial = np.array([10])
+#pm_pos_initial = np.array([5.5])
+pm_pos_initial = np.array([5.2])
+#pm_pos_initial = np.array([6.9])
+pm_vel_initial = np.array([0])
+#pm_vel_initial = np.array([-15])
+#pm_vel_initial = np.array([-5])
+#pm_vel_initial = np.array([10])
 # 2D:
 #pm_pos_initial = np.array([0,0])
 #pm_vel_initial = np.array([0,0])
@@ -98,7 +101,7 @@ t_start = 0.0
 # Then, the range of times will be:
 dt = 0.01
 #num_timesteps = 500
-num_timesteps = 3000
+num_timesteps = 1000
 #timesteps = np.linspace(t_start, t_end, num_timesteps)
 # For later (numerical integration), we need the timestep itself.
 # Maybe there's a better way to do this in the future.
