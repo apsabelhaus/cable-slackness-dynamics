@@ -82,10 +82,18 @@ class PointMass:
         accel = (1 / (self.m)) * sum_forces
         # Next, check if dimensionality is greater than 2, 
         # and add g to the second dimension if so (since (1/m)*mg = g).
-        if np.greater_equal(self.get_dimensionality(), 2):
-            # Add g to the second element (that's index 1.)
-            # here's where gravity acts in the 'negative' direction, (-) not (+)
-            accel[1] -= self.g
+        #DEBUGGING
+        # print('accel for this pm is: ', accel)
+        # if np.greater_equal(self.get_dimensionality(), 2):
+        #     # Add g to the second element (that's index 1.)
+        #     # here's where gravity acts in the 'negative' direction, (-) not (+)
+        #     accel[1] -= self.g
+        #     #DEBUGGING
+        #     #print('DEBUGGING: adding g, accel = ', accel)
+        # For the adding of gravity, we assume that the final dimension
+        # is the direction of gravity.
+        # E.g., in 1D, is in -X, in 2D, is in -Z (if X,Z), in 3D, is -Z (if X,Y,Z).
+        accel[-1] -= self.g
         # now done
         return accel
 

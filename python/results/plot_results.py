@@ -51,6 +51,10 @@ for key in results:
 # labels
 ax.set(xlabel='Time (sec)', ylabel='Mass position (m)', 
     title='Closed-loop slack cable control results')
+# For the gravity case, and on 2018-11-5,
+# we're doing an approx to a rigid bar:
+ax.set(xlabel='Time (sec)', ylabel='Bar CoM Position (m)', 
+    title='Closed-loop slack cable control results')
 ax.grid()
 # legend
 ax.legend(datalabels)

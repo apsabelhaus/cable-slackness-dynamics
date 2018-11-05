@@ -67,9 +67,14 @@ cables = [cable1, cable2]
 # desired x_eq. Use (for example) inverse kinematics here for larger N-D
 # tensegrities.
 pretensions = [300.0, 300.0]
+# For the gravity case, with m=1.45, we can calculate
+# the new required pretension to stabilize at the lengths/postions
+# spec'd above:
+#pretensions = [300.0, 285.8]
 
 # create the point mass.
 m = 1.45
+#m = 10
 #g = 9.8
 g = 0.0
 # 1D:
