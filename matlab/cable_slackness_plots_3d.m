@@ -93,7 +93,9 @@ xlim([xmin, xmax]);
 ylim([xmin, xmax]);
 zlim([xmin, xmax]);
 % Set the orientation of the plot
-view([17,19]);
+%view([17,19]);
+%view([-115, 19]);
+view([-26, 19]);
 % Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
 %plot(dx, F,'k');
 
@@ -163,7 +165,9 @@ xlim([xmin, xmax]);
 ylim([xmin, xmax]);
 zlim([xmin, xmax]);
 % Set the orientation of the plot
-view([17,19]);
+%view([17,19]);
+% view([-115, 19]);
+view([-26, 19]);
 % Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
 %plot(dx, F,'k');
 
@@ -210,13 +214,65 @@ AXISALIGN_TRANS_A = 0.5;
 AXISALIGN_TRANS_B = 0;
 align_axislabel([], gca);
 
-%% Plot 3: Rectifying the damper in extra addition
+%% Plot 3: Rectifying the damper in extra addition to
 
+% It should be just setting any damper to zero when spring is slack
+Fd_slackrect = Fd_rect;
+Fd_slackrect( Fs_rect >= 0 ) = 0;
+Fc_slackrect = -(Fs_rect + Fd_slackrect);
 
+% Make a plot!
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+zlim([xmin, xmax]);
+% Set the orientation of the plot
+%view([17,19]);
+% view([-115, 19]);
+view([-26, 19]);
+% Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
+%plot(dx, F,'k');
 
+% We can use surf to plot.
+Fc_extrarectsurf = surf(DX, XDOT, Fc_slackrect);
+% turn off the weird edges
+Fc_extrarectsurf.EdgeColor = 'none';
 
+handle = gca;
 
+% Axis labels:
+ylabel('$\dot \ell$, rate of length change');
+xlabel('$\Delta \ell$, cable stretch');
+zlabel('$-Fc_{slackrect}$, applied cable force');
+title('Rectified, no damping when slack');
 
+% Move the axes around.
+ax = gca;
+% ax.XAxisLocation = 'origin';
+% ax.YAxisLocation = 'origin';
+ax.XRuler.FirstCrossoverValue  = 0; % X crossover with Y axis
+ax.XRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.YRuler.FirstCrossoverValue  = 0; % Y crossover with X axis
+ax.YRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.ZRuler.FirstCrossoverValue  = 0; % Z crossover with X axis
+ax.ZRuler.SecondCrossoverValue = 0; % Z crossover with Y axis
+
+% Use the script from mathworks' file exchange to realign the axes:
+h = rotate3d;
+set(h, 'ActionPreCallback', 'set(gcf,''windowbuttonmotionfcn'',@align_axislabel)')
+set(h, 'ActionPostCallback', 'set(gcf,''windowbuttonmotionfcn'','''')')
+set(gcf, 'ResizeFcn', @align_axislabel)
+% Realign to the initial settings on perspective etc
+set(gca, 'projection', 'orthographic', 'box', 'off');
+set(gca, 'dataaspectratio', [0.75 0.75 1]);
+align_axislabel([], gca)
+% Translate the axes inward.
+%axislabel_translation_slider;
+AXISALIGN_TRANS_A = 0.5;
+AXISALIGN_TRANS_B = 0;
+align_axislabel([], gca);
 
 
 
