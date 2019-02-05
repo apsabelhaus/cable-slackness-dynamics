@@ -40,8 +40,21 @@ xmax = 1.5;
 colorAxisLine = 'k';
 linestyleAxisLine = '-';
 
+% To use latex characters in the plots,
+set(0, 'defaulttextinterpreter', 'latex');
 
-%% Plot 1 and 1.5: F = - k \delta x - c \dot x
+% For doing better axis labels in 3D, use this script from mathworks'
+% file exchange:
+addpath('./axis_alignment');
+
+% For using the axis alignment script, need these global variables defined
+% here.
+global AXISALIGN_TRANS_A AXISALIGN_TRANS_B
+if isempty(AXISALIGN_TRANS_A), AXISALIGN_TRANS_A = 0; end
+if isempty(AXISALIGN_TRANS_B), AXISALIGN_TRANS_B = 0; end
+
+
+%% Plot 1: F = - k \delta x - c \dot x
 % This plot shows the linear function F = - k \delta x - c \dot x.
 % But, what we will plot is -Fc here, so that we show both cable forces
 % being passive. Our claim will be that -Fs and -Fd are passive.
@@ -80,7 +93,7 @@ xlim([xmin, xmax]);
 ylim([xmin, xmax]);
 zlim([xmin, xmax]);
 % Set the orientation of the plot
-view([10,20]);
+view([17,19]);
 % Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
 %plot(dx, F,'k');
 
@@ -91,15 +104,41 @@ Fcsurf.EdgeColor = 'none';
 
 handle = gca;
 % Plot the lines:
-line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
-line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
-line( [0 0], [0 0], get(handle, 'Zlim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( [0 0], [0 0], get(handle, 'Zlim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('\dot \ell, rate of length change');
-xlabel('\Delta \ell, cable stretch');
-zlabel('-F_c, applied cable force');
+ylabel('$\dot \ell$, rate of length change');
+xlabel('$\Delta \ell$, cable stretch');
+zlabel('$-F_c$, applied cable force');
 title('Original piecewise-differentiable model');
+
+% Move the axes around.
+ax = gca;
+% ax.XAxisLocation = 'origin';
+% ax.YAxisLocation = 'origin';
+ax.XRuler.FirstCrossoverValue  = 0; % X crossover with Y axis
+ax.XRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.YRuler.FirstCrossoverValue  = 0; % Y crossover with X axis
+ax.YRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.ZRuler.FirstCrossoverValue  = 0; % Z crossover with X axis
+ax.ZRuler.SecondCrossoverValue = 0; % Z crossover with Y axis
+
+% Use the script from mathworks' file exchange to realign the axes:
+h = rotate3d;
+set(h, 'ActionPreCallback', 'set(gcf,''windowbuttonmotionfcn'',@align_axislabel)')
+set(h, 'ActionPostCallback', 'set(gcf,''windowbuttonmotionfcn'','''')')
+set(gcf, 'ResizeFcn', @align_axislabel)
+% Realign to the initial settings on perspective etc
+set(gca, 'projection', 'orthographic', 'box', 'off');
+set(gca, 'dataaspectratio', [0.75 0.75 1]);
+align_axislabel([], gca)
+% Translate the axes inward.
+%axislabel_translation_slider;
+AXISALIGN_TRANS_A = 0.5;
+AXISALIGN_TRANS_B = 0;
+align_axislabel([], gca);
 
 %% Plot 2: Individual rectification. We don't use this version since it can push a slack cable via damping, but needed for reference.
 % Specifically, this is:
@@ -124,7 +163,7 @@ xlim([xmin, xmax]);
 ylim([xmin, xmax]);
 zlim([xmin, xmax]);
 % Set the orientation of the plot
-view([10,20]);
+view([17,19]);
 % Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
 %plot(dx, F,'k');
 
@@ -135,17 +174,43 @@ Fc_rectsurf.EdgeColor = 'none';
 
 handle = gca;
 % Plot the lines:
-line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
-line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
-line( [0 0], [0 0], get(handle, 'Zlim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( [0 0], [0 0], get(handle, 'Zlim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('\dot \ell, rate of length change');
-xlabel('\Delta \ell, cable stretch');
-zlabel('-Fc_{rect}, applied cable force');
-title('Individuall-rectified model. NOT PHYSICALLY REALISTIC');
+ylabel('$\dot \ell$, rate of length change');
+xlabel('$\Delta \ell$, cable stretch');
+zlabel('$-Fc_{rect}$, applied cable force');
+title('Individually-rectified model. NOT PHYSICALLY REALISTIC');
 
+% Move the axes around.
+ax = gca;
+% ax.XAxisLocation = 'origin';
+% ax.YAxisLocation = 'origin';
+ax.XRuler.FirstCrossoverValue  = 0; % X crossover with Y axis
+ax.XRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.YRuler.FirstCrossoverValue  = 0; % Y crossover with X axis
+ax.YRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.ZRuler.FirstCrossoverValue  = 0; % Z crossover with X axis
+ax.ZRuler.SecondCrossoverValue = 0; % Z crossover with Y axis
 
+% Use the script from mathworks' file exchange to realign the axes:
+h = rotate3d;
+set(h, 'ActionPreCallback', 'set(gcf,''windowbuttonmotionfcn'',@align_axislabel)')
+set(h, 'ActionPostCallback', 'set(gcf,''windowbuttonmotionfcn'','''')')
+set(gcf, 'ResizeFcn', @align_axislabel)
+% Realign to the initial settings on perspective etc
+set(gca, 'projection', 'orthographic', 'box', 'off');
+set(gca, 'dataaspectratio', [0.75 0.75 1]);
+align_axislabel([], gca)
+% Translate the axes inward.
+%axislabel_translation_slider;
+AXISALIGN_TRANS_A = 0.5;
+AXISALIGN_TRANS_B = 0;
+align_axislabel([], gca);
+
+%% Plot 3: Rectifying the damper in extra addition
 
 
 
