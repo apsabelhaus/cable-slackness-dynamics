@@ -25,14 +25,22 @@ k = 2;
 num_pts = 1000;
 
 % Let's go for some range in x.
-xmin = -1.5;
-xmax = 1.5;
+% But make it a bit more "out" so we see the +- 1.5 labels
+%xmin = -1.5;
+%xmax = 1.5;
+xmin = -1.7;
+xmax = 1.7;
 
 % Add a line along the x-axis and y-axis.
 % Adapted from: https://www.mathworks.com/matlabcentral/answers/97996-is-it-possible-to-add-x-and-y-axis-lines-to-a-plot-in-matlab
 colorAxisLine = 'k';
-linestyleAxisLine = ':';
+linestyleAxisLine = '-';
 
+% To use latex characters in the plots,
+set(0, 'defaulttextinterpreter', 'latex');
+
+% Adjusting the text size - set a variable here to use everywhere below.
+fontsize = 14;
 
 %% Plot 1 and 1.5: F = k \delta x
 % This plot shows the linear function F = k \delta x, 
@@ -61,8 +69,8 @@ line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleA
 line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('F, applied force');
-xlabel('\Delta x, cable stretch');
+ylabel('$F$, applied force');
+xlabel('$\Delta \ell$, cable stretch');
 
 % Next, also plot the piecewise-continuous rectified function.
 % Just zero out the less-than-zero terms:
@@ -84,8 +92,8 @@ line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleA
 line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('F, applied force');
-xlabel('\Delta x, cable stretch');
+ylabel('$F$, applied force');
+xlabel('$\Delta \ell$, cable stretch');
 
 %% Plot 2: Logistic function
 % This plot will show one logistic function, for reference.
@@ -96,7 +104,7 @@ xlabel('\Delta x, cable stretch');
 % Take a look at the Wikipedia page about analytic approximations to 
 % the step function:
 % https://en.wikipedia.org/wiki/Heaviside_step_function#Analytic_approximations
-logistic_k = 5;
+logistic_k = 8; % was 5, looked nicer that way.
 logistic_x0 = 0;
 
 % TO-DO: look at more general sigmoid functions. Is there one that goes
@@ -118,7 +126,7 @@ logistic_x0 = 0;
 % f(x) = 1 / (1 + exp( -k*(x-x0)))
 
 % To-do: do we need pointwise multiplication here?
-%logistic_func = 1 ./ (1 + exp(-logistic_k*(dx - logistic_x0)));
+logistic_func = 1 ./ (1 + exp(-logistic_k*(dx - logistic_x0)));
 % some small constant... BUT still need to adjust x0 probably??
 %logistic_func = 1 ./ (1 + exp(-logistic_k*(dx - logistic_x0))) - 0.1;
 % Result: doesn't work. The "negativeness" of the logistic - small const
@@ -132,18 +140,67 @@ hold on;
 % The plot limits in the F-direction should keep the plot square.
 xlim([xmin, xmax]);
 ylim([xmin, xmax]);
+% But make it a bit more "out" so we see the +- 1.5 labels
+%eps = 0.2;
+%xlim([xmin-eps, xmax+eps]);
+%ylim([xmin-eps, xmax+eps]);
+
 
 % Plot the logistic.
-plot(dx, logistic_func, 'k');
+plot(dx, logistic_func, 'b', 'LineWidth', 2);
 
 handle = gca;
 % Plot the lines:
-line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
-line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+% line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+% line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+% Add a dashed line at y=1 to emphasize the unit-ness
+% line( get(handle,'XLim'), [1 1], 'Color', colorAxisLine, 'LineStyle', '--');
 
 % Axis labels:
-ylabel('L(\Delta x)');
-xlabel('\Delta x');
+ylabel('$L(x)$');
+xlabel('$x$');
+title('Unit Logistic Function (slope of $\alpha=8$)');
+
+% Move the axes around.
+ax = gca;
+ax.XAxisLocation = 'origin';
+ax.YAxisLocation = 'origin';
+%ax.XRuler.FirstCrossoverValue  = 0; % X crossover with Y axis
+%ax.XRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+%ax.YRuler.FirstCrossoverValue  = 0; % Y crossover with X axis
+%ax.YRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+
+% Make the text bigger
+set(gca, 'fontsize', fontsize);
+
+
+% In comparison, also do the heaviside step function:
+% Plot this on a new graph.
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+% luckily MATLAB already has the heaviside step built-in
+plot(dx, heaviside(dx), 'b.', 'LineWidth', 2);
+% also add a point at zero, but big.
+plot(0, heaviside(0), 'b.', 'MarkerSize', 20);
+% 
+
+% Axis labels:
+ylabel('$H(x)$');
+xlabel('$x$');
+title('Heaviside Step Function');
+
+% Move the axes around.
+ax = gca;
+ax.XAxisLocation = 'origin';
+ax.YAxisLocation = 'origin';
+
+% Make the text bigger
+set(gca, 'fontsize', fontsize);
+
+return;
 
 %% Plot 3: Cable force multiplied by logisitic function
 
@@ -170,8 +227,8 @@ line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleA
 line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('F_a(\Delta x)');
-xlabel('\Delta x');
+ylabel('$F_a(\Delta \ell)$');
+xlabel('$\Delta \ell$');
 
 %% Plot 3.5: Cable force (rectified) multiplied by the logistic function
 
@@ -196,8 +253,8 @@ line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleA
 line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('F_a(\Delta x)');
-xlabel('\Delta x');
+ylabel('$F_a(\Delta \ell)$');
+xlabel('$\Delta \ell$');
 title('Heavier cable, non smooth');
 
 % ...actually, this isn't right either. We need a function that exists
@@ -229,8 +286,8 @@ line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleA
 line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('F_a(\Delta x)');
-xlabel('\Delta x');
+ylabel('$F_a(\Delta \ell)$');
+xlabel('$\Delta \ell$');
 title('Heavier cable, non passive');
 
 %% Plot 4: comparison of piecewise function and logistically smoothed function
@@ -257,8 +314,8 @@ plot(dx, F_heavy, 'm', 'LineWidth', 3);
 
 
 % Axis labels:
-ylabel('F_a(x)', 'FontSize',14);
-xlabel('F_c(x)','FontSize',14);
+ylabel('$F_a(\ell$)', 'FontSize',14);
+xlabel('$F_c(\ell)$','FontSize',14);
 
 title('Cable Dynamics: Piecewise vs. Smooth');
 

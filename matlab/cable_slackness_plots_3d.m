@@ -110,11 +110,26 @@ handle = gca;
 %line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 %line( [0 0], [0 0], get(handle, 'Zlim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
+% Plot a dashed line along the "crease"
+% One way to do so is to get all the points along the Fc=0 from the
+% original (no rectification) plot.
+%Fc_orig = -(Fs + Fd);
+
+% Or, just between the two points at the edge. Line in 2D plane is \dot
+% \ell = -k/c \ell
+edgemin = [xmin; -(k/c)*xmin];
+edgemax = [xmax; -(k/c)*xmax];
+% reorganize for the line function
+xline = [edgemin(1); edgemax(1)];
+yline = [edgemin(2); edgemax(2)];
+line(xline, yline, 'Color', 'k', 'LineStyle', '--');
+
+
 % Axis labels:
-ylabel('$\dot \ell$, rate of length change');
+ylabel('$\dot \ell$, cable stretch rate');
 xlabel('$\Delta \ell$, cable stretch');
-zlabel('$-F_c$, applied cable force');
-title('Original piecewise-differentiable model');
+zlabel('$-F_c$, cable force');
+title('Piecewise Cable Model (Original)');
 
 % Move the axes around.
 ax = gca;
@@ -141,6 +156,9 @@ align_axislabel([], gca)
 AXISALIGN_TRANS_A = 0.5;
 AXISALIGN_TRANS_B = 0;
 align_axislabel([], gca);
+
+% Make the text bigger
+set(gca, 'fontsize', 14);
 
 %% Plot 2: Individual rectification. We don't use this version since it can push a slack cable via damping, but needed for reference.
 % Specifically, this is:
@@ -183,10 +201,10 @@ handle = gca;
 %line( [0 0], [0 0], get(handle, 'Zlim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
 
 % Axis labels:
-ylabel('$\dot \ell$, rate of length change');
+ylabel('$\dot \ell$, cable stretch rate');
 xlabel('$\Delta \ell$, cable stretch');
-zlabel('$-Fc_{rect}$, applied cable force');
-title('Individually-rectified model. NOT PHYSICALLY REALISTIC');
+zlabel('$-Fc$, cable force');
+title('Individually-Rectified Piecewise Cable Model');
 
 % Move the axes around.
 ax = gca;
@@ -213,6 +231,9 @@ align_axislabel([], gca)
 AXISALIGN_TRANS_A = 0.5;
 AXISALIGN_TRANS_B = 0;
 align_axislabel([], gca);
+
+% Make the text bigger
+set(gca, 'fontsize', 14);
 
 %% Plot 3: Rectifying the damper in extra addition to
 
@@ -243,10 +264,10 @@ Fc_extrarectsurf.EdgeColor = 'none';
 handle = gca;
 
 % Axis labels:
-ylabel('$\dot \ell$, rate of length change');
+ylabel('$\dot \ell$, cable stretch rate');
 xlabel('$\Delta \ell$, cable stretch');
-zlabel('$-Fc_{slackrect}$, applied cable force');
-title('Rectified, no damping when slack');
+zlabel('$-Fc$, cable force');
+title('Double-Rectified Piecewise Cable Model');
 
 % Move the axes around.
 ax = gca;
@@ -274,6 +295,7 @@ AXISALIGN_TRANS_A = 0.5;
 AXISALIGN_TRANS_B = 0;
 align_axislabel([], gca);
 
-
+% Make the text bigger
+set(gca, 'fontsize', 14);
 
 
