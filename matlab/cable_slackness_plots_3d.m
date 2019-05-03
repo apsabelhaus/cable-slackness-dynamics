@@ -25,7 +25,7 @@ clc;
 % We'll work in N and cm.
 % So, the spring constant is in N / cm:
 k = 3;
-% And for the damper,
+% And for the damper,X
 c = 2;
 
 % For all the plots, retain the same number of points.
@@ -235,7 +235,7 @@ align_axislabel([], gca);
 % Make the text bigger
 set(gca, 'fontsize', 14);
 
-%% Plot 3: Rectifying the damper in extra addition to
+%% Plot 3: Rectifying the damper in extra addition (doubly rectified model)
 
 % It should be just setting any damper to zero when spring is slack
 Fd_slackrect = Fd_rect;
@@ -365,6 +365,113 @@ ylabel('$\dot \ell$, cable stretch rate');
 xlabel('$\Delta \ell$, cable stretch');
 zlabel('$-F_c$, cable force');
 title('Logistically-Smoothed Cable Model');
+
+% Move the axes around.
+ax = gca;
+% ax.XAxisLocation = 'origin';
+% ax.YAxisLocation = 'origin';
+ax.XRuler.FirstCrossoverValue  = 0; % X crossover with Y axis
+ax.XRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.YRuler.FirstCrossoverValue  = 0; % Y crossover with X axis
+ax.YRuler.SecondCrossoverValue  = 0; % X crossover with Y axis
+ax.ZRuler.FirstCrossoverValue  = 0; % Z crossover with X axis
+ax.ZRuler.SecondCrossoverValue = 0; % Z crossover with Y axis
+
+% Use the script from mathworks' file exchange to realign the axes:
+h = rotate3d;
+set(h, 'ActionPreCallback', 'set(gcf,''windowbuttonmotionfcn'',@align_axislabel)')
+set(h, 'ActionPostCallback', 'set(gcf,''windowbuttonmotionfcn'','''')')
+set(gcf, 'ResizeFcn', @align_axislabel)
+% Realign to the initial settings on perspective etc
+set(gca, 'projection', 'orthographic', 'box', 'off');
+set(gca, 'dataaspectratio', [0.75 0.75 1]);
+align_axislabel([], gca)
+% Translate the axes inward.
+%axislabel_translation_slider;
+AXISALIGN_TRANS_A = 0.5;
+AXISALIGN_TRANS_B = 0;
+align_axislabel([], gca);
+
+% Make the text bigger
+set(gca, 'fontsize', 14);
+
+
+%% Plot 5: Logistically-Smoothed Double-Rectified Model.
+% The big one!! :)
+
+% The question: do we do rectification for *each* H, or just for part?
+% Let's try both.
+
+% logistic fcn's parameters:
+logistic_k_plot5 = 5; % was 5, looked nicer that way.
+%logistic_x0 = 0;
+
+% What we want really is 
+% L(\Delta \ell) k \Delta \ell - L(\Delta \ell) L(\dot \ell) c \dot \ell
+
+% and we have
+% Fs = -k * DX;
+% Fd = -c * XDOT;
+
+% So let's build up each term:
+
+logrect_spring = 1 ./ (1 + exp(-logistic_k_plot5.*(-Fs - logistic_x0)));
+logrect_damper = 1 ./ (1 + exp(-logistic_k_plot5.*(-Fd - logistic_x0)));
+
+Fs_doublelogrect = logrect_spring .* -Fs;
+% Fd_doublelogrect = logrect_spring .* logrect_damper .* -Fd;
+% Fd_doublelogrect = logrect_spring .* heaviside(-Fd) .* -Fd;
+Fd_doublelogrect = heaviside(-Fs) .* logrect_damper .* -Fd;
+
+
+% everything's additive. That's the point!
+Fc_doublelogrect = Fs_doublelogrect + Fd_doublelogrect;
+
+% Make a plot!
+figure();
+hold on;
+% The plot limits in the F-direction should keep the plot square.
+xlim([xmin, xmax]);
+ylim([xmin, xmax]);
+zlim([xmin, xmax]);
+% Set the orientation of the plot
+%view([17,19]);
+%view([-115, 19]);
+view([-26, 19]);
+% Make the line thick and black.https://www.sharelatex.com/project/591c89f19af743d90acc8102
+%plot(dx, F,'k');
+
+% We can use surf to plot.
+Fc_doublelogrectsurf = surf(DX, XDOT, Fc_doublelogrect);
+% turn off the weird edges
+Fc_doublelogrectsurf.EdgeColor = 'none';
+
+handle = gca;
+% Plot the lines:
+%line( get(handle,'XLim'), [0 0], 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( [0 0], get(handle, 'Ylim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+%line( [0 0], [0 0], get(handle, 'Zlim'), 'Color', colorAxisLine, 'LineStyle', linestyleAxisLine);
+
+% Plot a dashed line along the "crease"
+% One way to do so is to get all the points along the Fc=0 from the
+% original (no rectification) plot.
+%Fc_orig = -(Fs + Fd);
+
+% Or, just between the two points at the edge. Line in 2D plane is \dot
+% \ell = -k/c \ell
+% edgemin = [xmin; -(k/c)*xmin];
+% edgemax = [xmax; -(k/c)*xmax];
+% reorganize for the line function
+% xline = [edgemin(1); edgemax(1)];
+% yline = [edgemin(2); edgemax(2)];
+% line(xline, yline, 'Color', 'k', 'LineStyle', '--');
+
+
+% Axis labels:
+ylabel('$\dot \ell$, cable stretch rate');
+xlabel('$\Delta \ell$, cable stretch');
+zlabel('$-F_c$, cable force');
+title('Logistically-Smoothed Double-Rectified Cable Model');
 
 % Move the axes around.
 ax = gca;

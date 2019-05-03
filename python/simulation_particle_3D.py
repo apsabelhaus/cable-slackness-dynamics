@@ -17,73 +17,77 @@ from body_models import *
 # Assume that each cable will interpret its dict correctly (polymorphically.)
 # Each cable will have a tag associated with it.
 # Makes it easier than numbering.
+
+cable_tags = ['top', 'bottom', 'left', 'right']
+
+# Let's do top bottom left right, like the spine frame, for 
+# a tetrahedral convex hull.
+params_top = {'k':300, 'c':10}
+params_bottom = {'k':100, 'c':10}
+params_left = {'k':150, 'c':20}
+params_right = {'k':350, 'c':30}
+
 # Put the parameters into a nested dict.
-linear_cable_params1 = {'k':300, 'c':10}
-linear_cable_params2 = {'k':100, 'c':10}
+cable_params = {'top':params_top, 'bottom':params_bottom, 
+                'left':params_left, 'right':params_right}
 
+# Anchor points for each cable.
+# These are all in three dimensions.
+# Force floating point numbers.
+# (check these later.)
+anchor_top = np.array([0., 10., 10.])
+anchor_bottom = np.array([0., 10., -10.])
+anchor_left = np.array([-10., -10., 0.])
+anchor_right = np.array([10., -10., 0.])
 
-# For later, turn this into a list by cable number.
-# TO-DO: make more robust!!!
-linear_cable_params_list = [linear_cable_params1, linear_cable_params2]
+# Anchors in a nested dict too.
+cable_anchors = {'top':anchor_top, 'bottom':anchor_bottom,
+                 'left':anchor_left, 'right':anchor_right}
+
+# create the cables
+# important that each tag has a set of parameters and an anchor!
+cables = {}
+for tag in cable_tags:
+    cables[tag] = cable_piecewise3D.PiecewiseLinearCable3D(
+                        params = cable_params[tag],
+                        anchor_pos = cable_anchors[tag])                                                                      
+
 
 # For feedback control, declare some proportionality constants.
 # One for each cable, for now (two distributed controllers.)
-kappa = np.array([15, 15])
+# kappa = np.array([15, 15])
 
 # Also, for controller, we need to specify a point to stabilize around.
 # Assuming the anchors below (8 and 2), stabilizing around 6.5 (within [5 7])
 # leads to equilibrium cable lengths of
-l_eq = [1.5, 4.5]
+# l_eq = [1.5, 4.5]
 
-# anchor point for cable 1 at some offset.
-# 1D:
-cable1_anchor = np.array([8])
-# 2D:
-#cable1_anchor = np.array([2,2])
+# TO-DO here: make the controller a class, instantiate controllers
+# for each cable.
 
-# Add a second cable.
-cable2_anchor = np.array([2])
-
-# create the cables
-# Brief description of classes:
-# LinearCable is spring-damper, the usual from undergrad diffeq
-# HybridLinearCable is spring-damper, rectified with 0 as per NTRT and Skelton.
-# HybridSplitLinearCable is the model we're proposing, with individual
-# checks on the spring force and the damping force, with the damping also
-# rectified to only be + when spring is in tension (otherwise unrealistic - 
-# would apply a potentially 'big' force when intuitively slack! We don't
-# want to consider visoelasticity here.)
-
-# cable1 = cable_linear.LinearCable(params = linear_cable_params, 
-#                                     anchor_pos = cable1_anchor)
-# cable2 = cable_linear.LinearCable(params = linear_cable_params,
-#                                     anchor_pos = cable2_anchor)       
-cable1 = cable_hybrid.HybridSplitLinearCable(params = linear_cable_params1, 
-                                    anchor_pos = cable1_anchor)
-cable2 = cable_hybrid.HybridSplitLinearCable(params = linear_cable_params2,
-                                    anchor_pos = cable2_anchor)                                                                    
-
+# something to start for now: open loop, setpoint, fully retracted.
+controllers = {}
+for tag in cable_tags:
+    controllers[tag] = 0.
 
 # For consistency with more general simulations,
 # make a list of cables
-cables = [cable1, cable2]
+# cables = [cable1, cable2]
 # testing: one hybrid cable
 #cables = [cable2]
 
 # Pre-calculated values for the equilibrium cable forces at a 
 # desired x_eq. Use (for example) inverse kinematics here for larger N-D
 # tensegrities.
-pretensions = [300.0, 300.0]
+# pretensions = [300.0, 300.0]
 # For the gravity case, with m=1.45, we can calculate
 # the new required pretension to stabilize at the lengths/postions
 # spec'd above:
 #pretensions = [300.0, 285.8]
 
-# create the point mass.
+# Now, for the mass: in kilograms and SI units,
 m = 1.45
-#m = 10
-#g = 9.8
-g = 0.0
+g = 9.8
 # 1D:
 # example: for a cable anchor at x=2,
 # an initial position of 0, 
@@ -93,16 +97,22 @@ g = 0.0
 # would command a negative rest length outside those bounds.)
 # In future: need to check 
 #pm_pos_initial = np.array([5.5])
-pm_pos_initial = np.array([5.2])
+# pm_pos_initial = np.array([5.2])
 #pm_pos_initial = np.array([6.9])
-pm_vel_initial = np.array([0])
+# pm_vel_initial = np.array([0.])
 #pm_vel_initial = np.array([-15])
 #pm_vel_initial = np.array([-5])
 #pm_vel_initial = np.array([10])
 # 2D:
 #pm_pos_initial = np.array([0,0])
 #pm_vel_initial = np.array([0,0])
-pm = point_mass.PointMass(m, g, pm_pos_initial, pm_vel_initial)
+
+# Initial condition:
+pm_pos_initial = [0.1, 0.5, 2.]
+pm_vel_initial = [0.5, .8, -.1]
+
+# The body itself:
+pm = point_mass3D.PointMass(m, g, pm_pos_initial, pm_vel_initial)
 
 # Let's create a range of timesteps for the simulation.
 # really, don't change the start time from 0, that's meaningless unless
@@ -128,13 +138,12 @@ timesteps = np.arange(t_start, dt*(num_timesteps+1), dt)
 # We need to save the results of the system state, over time.
 # This needs to be a 2*d-dimensional by timestep problem
 # (we're saving both positions and velocities)
-d = pm.get_dimensionality()
 # 'shape' of ndarray is (first axis -> row), (second axis -> column)
 # so we're looking at row vectors here.
 # ALSO, we're storing the initial state as the first element,
 # so for num_timesteps of data, we need to be recording in a num_timesteps+1
 # array.
-pm_state_history = np.zeros((num_timesteps+1, 2*d))
+pm_state_history = np.zeros((num_timesteps+1, 6))
 # Something like pm_state_history[1] returns
 # a d-dimensional vector.
 # Insert the initial state into the ndarray.
@@ -153,6 +162,8 @@ for t in range(num_timesteps):
     # Though it's inefficient to re-declare every iteration,
     # placing the control declaration here reminds us that it goes here
     # also later when the control law is implemented.
+
+    # TO-DO: use controller objects.
     
     # hard coded for now: for n cables, need n inputs.
     # do it as an ndarray so we can index into it.
@@ -161,6 +172,9 @@ for t in range(num_timesteps):
 
     # Get the current point mass state, for use in calculating the
     # cable force(s).
+    pm_pos = pm.get_pos()
+    pm_vel = pm.get_vel()
+    # for numerical integration below
     pm_state = pm.get_state()
 
     # Have each cable calculate its force.
@@ -171,37 +185,20 @@ for t in range(num_timesteps):
     # The "pythonic" way of iterating over both cables and control inputs
     # would be to use the 'zip' function, but unsure if that's best here...
     # default to a more MATLAB-ian syntax.
-    for i in range(np.size(cables)):
-        # append the force from this cable.
-        # BE CAREFUL that the control input vector is the same size
-        # as the number of cables!
+    for tag in cable_tags:
 
         # calculate the control input for this cable based on its length.
-        # pull out the spring const for ease
-        k_i = linear_cable_params_list[i]['k']
-        # length calulated by cable
-        l_i = cables[i].calculate_length_from_state(pm_state)
+        # length calulated by cable. All are connected to the point mass.
+        l_i = cables[tag].get_length(pm_pos)
         
         # CONTROL LAW
-
-        # Feedback cancellation: always apply equilibrium force:
-        #control = l_i - (1/k_i) * pretensions[i]
-
-        # *NOTE*, you need to check the bounds on actuator saturation for 
-        # this control to be valid. This example would be applying
-        # a negative control input outside the bounds of [5, 7],
-        # which is not possible (cables can't have negative rest length.)
-
-        # Feedback with proportional term: (see Drew's notes)
-        # control = \alpha_i * l_i + \beta_i
-        alpha_i = 1 - (kappa[i] / k_i)
-        beta_i = (1/k_i) * ((kappa[i] * l_eq[i]) - pretensions[i])
-        control = alpha_i * l_i + beta_i
+        # open loop for now.
+        control_i = controllers[tag]
 
         #debugging
-        print('Length and control input for cable ' + str(i))
+        print('Length and control input for cable ' + tag)
         print(l_i)
-        print(control)
+        print(control_i)
         
         ### IMPORTANT: 
         # Here is where the sign is flipped for cable forces.
@@ -212,7 +209,8 @@ for t in range(num_timesteps):
         # See, for example, the nonlinear passive spring proof
         # in Sastry's Nonlinear Systems textbook, where the spring
         # force is g(x), and the equations of motion include -g(x).
-        force_i = -cables[i].calculate_force_nd(pm_state, control)
+        # CHECK THIS
+        force_i = -cables[tag].force3d(pm_pos, pm_vel, control_i)
         #print(force_i)
         forces_list.append(force_i)
     
