@@ -94,7 +94,7 @@ class Cable3D(ABC):
     # For use when calculating the value of the Lyapunov function,
     # we also want the scalar conservative force little \mathbf{f}.
     # By definition, that's the scalar force with zero velocity, so
-    def scalar_conservative_force(self, ell, control_input)
+    def scalar_conservative_force(self, ell, control_input):
         # working in three dimensions
         vel = np.array([0, 0, 0])
         return self.scalar_force(ell, vel, control_input)
