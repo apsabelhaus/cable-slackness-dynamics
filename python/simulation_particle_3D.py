@@ -8,6 +8,7 @@ This goes with the controller derived in Drew's dissertation.
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 # for the cables and other things we write,
 # let's make it so we don't need to use the module name
 from cable_models import *
@@ -22,10 +23,10 @@ cable_tags = ['top', 'bottom', 'left', 'right']
 
 # Let's do top bottom left right, like the spine frame, for 
 # a tetrahedral convex hull.
-params_top = {'k':300, 'c':10}
-params_bottom = {'k':100, 'c':10}
-params_left = {'k':150, 'c':20}
-params_right = {'k':350, 'c':30}
+params_top = {'k':300, 'c':50}
+params_bottom = {'k':100, 'c':50}
+params_left = {'k':150, 'c':50}
+params_right = {'k':350, 'c':50}
 
 # Put the parameters into a nested dict.
 cable_params = {'top':params_top, 'bottom':params_bottom, 
@@ -112,7 +113,7 @@ pm_pos_initial = [0.1, 0.5, 2.]
 pm_vel_initial = [0.5, .8, -.1]
 
 # The body itself:
-pm = point_mass3D.PointMass(m, g, pm_pos_initial, pm_vel_initial)
+pm = point_mass3D.PointMass3D(m, g, pm_pos_initial, pm_vel_initial)
 
 # Let's create a range of timesteps for the simulation.
 # really, don't change the start time from 0, that's meaningless unless
@@ -156,6 +157,7 @@ pm_state_history[0] = pm.get_state()
 # default to a more MATLAB-ian syntax.
 for t in range(num_timesteps):
     # ...note that this will have t from 0 to num_timesteps-1.
+    print('Timestep ' + str(t))
 
     # At a specific timestep, we have a control input for each cable.
     # Later, we calculate this closed-loop.
@@ -196,9 +198,9 @@ for t in range(num_timesteps):
         control_i = controllers[tag]
 
         #debugging
-        print('Length and control input for cable ' + tag)
-        print(l_i)
-        print(control_i)
+        # print('Length and control input for cable ' + tag)
+        # print(l_i)
+        # print(control_i)
         
         ### IMPORTANT: 
         # Here is where the sign is flipped for cable forces.
@@ -210,13 +212,13 @@ for t in range(num_timesteps):
         # in Sastry's Nonlinear Systems textbook, where the spring
         # force is g(x), and the equations of motion include -g(x).
         # CHECK THIS
-        force_i = -cables[tag].force3d(pm_pos, pm_vel, control_i)
+        force_i = -cables[tag].force_3d(pm_pos, pm_vel, control_i)
         #print(force_i)
         forces_list.append(force_i)
     
     #debugging
-    print('Forces at timestep ' + str(t))
-    print(forces_list)
+    # print('Forces at timestep ' + str(t))
+    # print(forces_list)
     # The point mass can then calculate its \dot x
     # (as in, \dot x = f(x, u), really just the vel and accel in one vec.)
     pm_state_deriv = pm.state_deriv(forces_list)
@@ -233,42 +235,22 @@ for t in range(num_timesteps):
     # end.
 
 # Let's plot the results!
-
-fig, ax = plt.subplots()
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
 # REMEMBER THAT PYTHON INDEXES FROM 0
-# 2D:
-#ax.plot(pm_state_history[:,0], pm_state_history[:,1])
-# 1D:
-ax.plot(timesteps, pm_state_history[:,0])
+# 3D:
+ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
+# Add a green point for the initial position,
+# and a purple point for the final
+ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
+        color='green', marker='o')
+ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
+        color='m', marker='o')
+# To-do here: annotate initial and final timesteps.
 # labels
-ax.set(xlabel='Time (sec)', ylabel='Mass position (m)', 
-    title='Closed-loop slack cable control results')
-ax.grid()
+ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
+    title='Open-loop slack cable control results')
+#ax.grid()
 # make a line at the equilibrium position
 #ax.axhline(y=6.5, label='Equilibrium position')
 plt.show()
-# as of 2018-08-10:
-# the 1D case works as expected, with the observation that
-#   there are multiple equilibria in this model, technically:
-#   if the point mass starts on "one side" of the anchor, it 
-#   converges to that "side's" equiibrium with the offset in rest
-#   position from the control input. If "other side," then opposite.
-#   Example: at anchor = 2, and control_input = 4, two behaviors:
-#   if initial_pos > 2, then converges to x = 6, 
-#   but if initial_pos < 2, then converges to x = -2.
-#   There's an odd behavior in 1D where the cable "flips around."
-#   That doesn't apply to 2D or 3D, where there is no concept
-#   of "the other side of the cable," so this is really just
-#   expected behavior. A spring-damper can be a nonlinear system,
-#   who'd have thought?
-# But doesn't work for 2D case just yet.
-# two observations: (is pm_history the right size? seems wrong.)
-# (1) without gravity, system converges.
-# (2) system converges to the *wrong* equilibrium position?
-#       seems like it converges to [2,0] not [2,2].
-#       this might be occurring in 1D also...
-# as of 2018-07-17:
-#   the control law gives stability in the sense of Lyapunov... since the 
-#   point mass doesn't move (d'oh). We've done this so that the forces cancel,
-#   and the robot thus always remains in a new equilibrium at that state.
-#   Instead, maybe feed back the error signal with a proportional term?
