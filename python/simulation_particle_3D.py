@@ -242,11 +242,15 @@ ax = fig.add_subplot(111, projection='3d')
 ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
 # Add a green point for the initial position,
 # and a purple point for the final
+t0 = pm_state_history[0,:]
+tf = pm_state_history[-1,:]
 ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
         color='green', marker='o')
 ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
         color='m', marker='o')
 # To-do here: annotate initial and final timesteps.
+ax.text(t0[0], t0[1], t0[2], 't0')
+ax.text(tf[0], tf[1], tf[2], 'tf')
 # labels
 ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
     title='Open-loop slack cable control results')
