@@ -13,6 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # let's make it so we don't need to use the module name
 from cable_models import *
 from body_models import *
+from controllers import *
 
 # Parameters for the cables are going to be a dict.
 # Assume that each cable will interpret its dict correctly (polymorphically.)
@@ -23,10 +24,10 @@ cable_tags = ['top', 'bottom', 'left', 'right']
 
 # Let's do top bottom left right, like the spine frame, for 
 # a tetrahedral convex hull.
-params_top = {'k':300, 'c':50}
-params_bottom = {'k':100, 'c':50}
-params_left = {'k':150, 'c':50}
-params_right = {'k':350, 'c':50}
+params_top = {'k':300, 'c':10}
+params_bottom = {'k':100, 'c':10}
+params_left = {'k':150, 'c':10}
+params_right = {'k':350, 'c':10}
 
 # Put the parameters into a nested dict.
 cable_params = {'top':params_top, 'bottom':params_bottom, 
@@ -36,10 +37,10 @@ cable_params = {'top':params_top, 'bottom':params_bottom,
 # These are all in three dimensions.
 # Force floating point numbers.
 # (check these later.)
-anchor_top = np.array([0., 10., 10.])
-anchor_bottom = np.array([0., 10., -10.])
-anchor_left = np.array([-10., -10., 0.])
-anchor_right = np.array([10., -10., 0.])
+anchor_top = np.array([0., .2, .2])
+anchor_bottom = np.array([0., .2, -.2])
+anchor_left = np.array([-.2, -.2, 0.])
+anchor_right = np.array([.2, -.2, 0.])
 
 # Anchors in a nested dict too.
 cable_anchors = {'top':anchor_top, 'bottom':anchor_bottom,
@@ -54,22 +55,34 @@ for tag in cable_tags:
                         anchor_pos = cable_anchors[tag])                                                                      
 
 
-# For feedback control, declare some proportionality constants.
-# One for each cable, for now (two distributed controllers.)
-# kappa = np.array([15, 15])
+# For feedback control, declare the required constants.
+# As with the cables, assume that each controller will have a tag,
+# and do a nested dictionary.
+controller_consts_top = {'kappa':0.88, 'bar_ell':0.217944947177034, 'bar_v': 0.186851770747656}
+controller_consts_bottom = {'kappa':0.995, 'bar_ell':0.295803989154981, 'bar_v': 0.292845949263251}
+controller_consts_left = {'kappa':0.98, 'bar_ell':0.357071421427142, 'bar_v': 0.346645035107927}
+controller_consts_right = {'kappa':0.95, 'bar_ell':0.295803989154981, 'bar_v': 0.277295287050143}
 
-# Also, for controller, we need to specify a point to stabilize around.
-# Assuming the anchors below (8 and 2), stabilizing around 6.5 (within [5 7])
-# leads to equilibrium cable lengths of
-# l_eq = [1.5, 4.5]
+controller_consts = {'top':controller_consts_top, 'bottom':controller_consts_bottom,
+                 'left':controller_consts_left, 'right':controller_consts_right}
 
-# TO-DO here: make the controller a class, instantiate controllers
-# for each cable.
-
-# something to start for now: open loop, setpoint, fully retracted.
+# Affine, output feedback controllers.
 controllers = {}
 for tag in cable_tags:
-    controllers[tag] = 0.
+    controllers[tag] = linear.AffineFeedback(kappa = controller_consts[tag]['kappa'],
+                                             bar_ell = controller_consts[tag]['bar_ell'],
+                                             bar_v = controller_consts[tag]['bar_v'])
+
+# Open-loop setpoint controllers.
+# Affine, output feedback controllers.
+# controllers = {}
+# for tag in cable_tags:
+#     controllers[tag] = linear.OpenLoop(bar_v = controller_consts[tag]['bar_v'])
+
+# something to start for now: open loop, setpoint, fully retracted.
+# controllers = {}
+# for tag in cable_tags:
+#     controllers[tag] = 0.
 
 # For consistency with more general simulations,
 # make a list of cables
@@ -87,7 +100,7 @@ for tag in cable_tags:
 #pretensions = [300.0, 285.8]
 
 # Now, for the mass: in kilograms and SI units,
-m = 1.45
+m = 0.495
 g = 9.8
 # 1D:
 # example: for a cable anchor at x=2,
@@ -110,7 +123,7 @@ g = 9.8
 
 # Initial condition:
 pm_pos_initial = [0.1, 0.5, 2.]
-pm_vel_initial = [0.5, .8, -.1]
+pm_vel_initial = [3., 3., 15.]
 
 # The body itself:
 pm = point_mass3D.PointMass3D(m, g, pm_pos_initial, pm_vel_initial)
@@ -123,8 +136,8 @@ t_start = 0.0
 # (let's do maybe 1/100th of a sec, 100 Hz for integration is fine for now)
 # Then, the range of times will be:
 dt = 0.01
-#num_timesteps = 500
-num_timesteps = 1000
+num_timesteps = 500
+# num_timesteps = 50000
 #timesteps = np.linspace(t_start, t_end, num_timesteps)
 # For later (numerical integration), we need the timestep itself.
 # Maybe there's a better way to do this in the future.
@@ -194,13 +207,16 @@ for t in range(num_timesteps):
         l_i = cables[tag].get_length(pm_pos)
         
         # CONTROL LAW
-        # open loop for now.
-        control_i = controllers[tag]
+        # open loop:
+        # control_i = controllers[tag]
+
+        # Affine output feedback:
+        control_i = controllers[tag].v(l_i)
 
         #debugging
-        # print('Length and control input for cable ' + tag)
-        # print(l_i)
-        # print(control_i)
+        print('Length and control input for cable ' + tag)
+        print(l_i)
+        print(control_i)
         
         ### IMPORTANT: 
         # Here is where the sign is flipped for cable forces.
@@ -234,16 +250,28 @@ for t in range(num_timesteps):
     pm_state_history[t+1] = pm_state_tp1
     # end.
 
+# An analysis at the end.
+# Add a green point for the initial position,
+# and a purple point for the final
+t0 = pm_state_history[0,:]
+tf = pm_state_history[-1,:]
+
+print('Equilibrium position should be:')
+# ...from MATLAB's calculations,
+bar_r = np.array([0.05, 0.05, 0.05])
+print(bar_r.shape)
+print(bar_r)
+print('Point mass position at final timestep:')
+print(tf[0:3])
+print('Error is:')
+print(tf[0:3] - bar_r)
+
 # Let's plot the results!
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 # REMEMBER THAT PYTHON INDEXES FROM 0
 # 3D:
 ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
-# Add a green point for the initial position,
-# and a purple point for the final
-t0 = pm_state_history[0,:]
-tf = pm_state_history[-1,:]
 ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
         color='green', marker='o')
 ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
@@ -258,3 +286,4 @@ ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
 # make a line at the equilibrium position
 #ax.axhline(y=6.5, label='Equilibrium position')
 plt.show()
+
