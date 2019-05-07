@@ -293,14 +293,35 @@ print(tf[0:3] - bar_r)
 # Let's plot the results!
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
+# Change the azimuth and elevation for better viewing
+az = -47.
+elev = 36.
 # REMEMBER THAT PYTHON INDEXES FROM 0
 # 3D:
-line, = ax.plot(pm_state_history[0:1,0], pm_state_history[0:1,1], pm_state_history[0:1,2])
+pm_path_line = ax.plot(pm_state_history[0:1,0], pm_state_history[0:1,1], pm_state_history[0:1,2])[0]
+ax.view_init(elev=elev, azim=az)
+
+# change the density of ticks
+numticksx = 5
+xloc = plt.MaxNLocator(numticksx)
+ax.xaxis.set_major_locator(xloc)
+
+numticksy = 5
+yloc = plt.MaxNLocator(numticksy)
+ax.yaxis.set_major_locator(yloc)
+
+numticksz = 4
+zloc = plt.MaxNLocator(numticksz)
+ax.zaxis.set_major_locator(zloc)
+
+# ax.locator_params(nbins=8)
+# ax.locator_params(nbins=8, axis='y')
+# ax.locator_params(nbins=8, axis='z')
 # ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
 
 # The starting point
 ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
-        color='green', marker='o', s=60)
+        color='blue', marker='o', s=60)
 ax.text(t0[0], t0[1], t0[2], 't0')
 
 # plot the anchor points
@@ -308,6 +329,36 @@ for tag in cable_tags:
         anch = cable_anchors[tag]
         ax.scatter(anch[0], anch[1], anch[2], s=60, color='black', marker='v')
         # ax.text(anch[0], anch[1], anch[2], )
+
+# For use below:
+# It's sometimes bad practice to compare with zero, when we know we're setting to
+# zero for slackness. Instead, less than a small constant.
+eps = 1E-10
+
+# A function to return the desired color for the cable.
+def cable_color_chooser(frameno, tag, force_history, bound):
+        # This cable's force. Index into a list then the dict
+        force = force_history[frameno][tag]
+        # Check if it's slack or not
+        if force <= bound:
+                return 'r'
+        else:
+                return 'g'
+
+# Initialize the dictionary of lines per anchor.
+cable_lines_dict = {}
+for tag in cable_tags:
+        anch = cable_anchors[tag]
+        # Organize cable lines into three, 2-element np arrays
+        clx = np.array([pm_state_history[0,0], anch[0]])
+        cly = np.array([pm_state_history[0,1], anch[1]])
+        clz = np.array([pm_state_history[0,2], anch[2]])
+        # Get the right color for this cable
+        color_i = cable_color_chooser(0, tag, force_history, eps)
+        # Actually plot the line
+        cable_line_i = ax.plot(clx, cly, clz, color=color_i)[0]
+        # and save it to the dict, so we can continue to update it later
+        cable_lines_dict[tag] = cable_line_i
 
 # Setting the plot limits:
 # ax.set_xlim(-0.7, 0.7)
@@ -332,7 +383,31 @@ ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
 #         ax.set_zlim(-0.2, 0.5)
 #         return line,
 
-def ani_update(frameno, pm_state_history, ln, handles):
+# Used to update the lines used to represent the cables, 
+# from anchors to point mass.
+def update_cable_lines(frameno, pm_state_history, cable_lines_dict, 
+                       cable_tags, cable_anchors, force_history, bound):
+        # As with the initialization,
+        for tag in cable_tags:
+                anch = cable_anchors[tag]
+                # Organize cable lines into three, 2-element np arrays
+                clx = np.array([pm_state_history[frameno-1,0], anch[0]])
+                cly = np.array([pm_state_history[frameno-1,1], anch[1]])
+                clz = np.array([pm_state_history[frameno-1,2], anch[2]])
+                # Pull out this line
+                cable_line_i = cable_lines_dict[tag]
+                # Get the right color for this cable
+                color_i = cable_color_chooser(frameno-1, tag, force_history, eps)
+                # Update it appropriately
+                cable_line_i.set_data(clx, cly)
+                cable_line_i.set_color(color_i)
+                cable_line_i.set_3d_properties(clz)
+
+# Update the animation - this is passed to FuncAnimation
+# Need to pass in all the arguments to update_cable_lines too,
+# messy.
+def ani_update(frameno, pm_state_history, ln, handles, cable_lines_dict, 
+               cable_tags, cable_anchors, force_history, bound):
         # First, clear out all the scatterplots from prev calls.
         # The guard evaluates to true if handles is not empty
         while len(handles) != 0:
@@ -345,7 +420,10 @@ def ani_update(frameno, pm_state_history, ln, handles):
         next_h = ax.scatter(pm_state_history[frameno-1,0], pm_state_history[frameno-1,1], pm_state_history[frameno-1,2],
                 color='blue', marker='o', s=60)
         handles.append(next_h)
-        return ln,
+        # Also update the lines from the pointmass to the cable anchors
+        update_cable_lines(frameno, pm_state_history, cable_lines_dict, 
+                           cable_tags, cable_anchors, force_history, bound)
+        return ln
 
 # One way to pass around the handles to the updated positions
 # is to store in a list of those handles,
@@ -354,7 +432,10 @@ position_handles_list = []
 
 # finally, run
 ani = FuncAnimation(fig=fig, func=ani_update, frames=num_timesteps, 
-                    fargs=(pm_state_history, line, position_handles_list), interval=50, blit=False)
+                    fargs=(pm_state_history, pm_path_line, position_handles_list,
+                           cable_lines_dict, cable_tags, cable_anchors, 
+                           force_history, eps), 
+                    interval=50, blit=False)
 
 plt.show()
 
