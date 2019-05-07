@@ -141,7 +141,7 @@ t_start = 0.0
 # (let's do maybe 1/100th of a sec, 100 Hz for integration is fine for now)
 # Then, the range of times will be:
 dt = 0.01
-num_timesteps = 500
+num_timesteps = 200
 # num_timesteps = 50000
 #timesteps = np.linspace(t_start, t_end, num_timesteps)
 # For later (numerical integration), we need the timestep itself.
@@ -219,9 +219,9 @@ for t in range(num_timesteps):
         control_i = controllers[tag].v(l_i)
 
         #debugging
-        print('Length and control input for cable ' + tag)
-        print(l_i)
-        print(control_i)
+        # print('Length and control input for cable ' + tag)
+        # print(l_i)
+        # print(control_i)
         
         ### IMPORTANT: 
         # Here is where the sign is flipped for cable forces.
@@ -264,7 +264,6 @@ tf = pm_state_history[-1,:]
 print('Equilibrium position should be:')
 # ...from MATLAB's calculations,
 bar_r = np.array([0.05, 0.05, 0.05])
-print(bar_r.shape)
 print(bar_r)
 print('Point mass position at final timestep:')
 print(tf[0:3])
@@ -278,10 +277,18 @@ ax = fig.add_subplot(111, projection='3d')
 # 3D:
 line, = ax.plot(pm_state_history[0:1,0], pm_state_history[0:1,1], pm_state_history[0:1,2])
 # ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
-# ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
-#         color='green', marker='o')
-# ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
-#         color='m', marker='o')
+
+# The starting point
+ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
+        color='green', marker='o', s=60)
+ax.text(t0[0], t0[1], t0[2], 't0')
+
+# plot the anchor points
+for tag in cable_tags:
+        anch = cable_anchors[tag]
+        ax.scatter(anch[0], anch[1], anch[2], s=60, color='black', marker='v')
+        # ax.text(anch[0], anch[1], anch[2], )
+
 # Setting the plot limits:
 # ax.set_xlim(-0.7, 0.7)
 # ax.set_ylim(-0.2, 0.6)
@@ -290,29 +297,46 @@ ax.set_xlim(-0.15, 0.3)
 ax.set_ylim(-0.6, 0.15)
 ax.set_zlim(-0.2, 0.5)
 # # To-do here: annotate initial and final timesteps.
-# ax.text(t0[0], t0[1], t0[2], 't0')
+
 # ax.text(tf[0], tf[1], tf[2], 'tf')
 # # labels
-# ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
-#     title='Open-loop slack cable control results')
+ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
+    title='Cable-driven robot (particle) position, closed-loop control')
 # #ax.grid()
 
 # # The easiest way to do things here are a few functions inside this script.
-def ani_init():
-        # initialize/reset the image for the animation.
-        ax.set_xlim(-0.15, 0.3)
-        ax.set_ylim(-0.6, 0.15)
-        ax.set_zlim(-0.2, 0.5)
-        return line,
+# def ani_init():
+#         # initialize/reset the image for the animation.
+#         ax.set_xlim(-0.15, 0.3)
+#         ax.set_ylim(-0.6, 0.15)
+#         ax.set_zlim(-0.2, 0.5)
+#         return line,
 
-def ani_update(frameno, pm_state_history, ln):
+def ani_update(frameno, pm_state_history, ln, handles):
+        # First, clear out all the scatterplots from prev calls.
+        # The guard evaluates to true if handles is not empty
+        while len(handles) != 0:
+                h = handles.pop()
+                h.remove()
         # Given a timestep (that's 'frame'),
         # plot all the data from zero until now.
         ln.set_data(pm_state_history[0:frameno, 0], pm_state_history[0:frameno, 1])
         ln.set_3d_properties(pm_state_history[0:frameno, 2])
+        next_h = ax.scatter(pm_state_history[frameno-1,0], pm_state_history[frameno-1,1], pm_state_history[frameno-1,2],
+                color='blue', marker='o', s=60)
+        handles.append(next_h)
         return ln,
+
+# One way to pass around the handles to the updated positions
+# is to store in a list of those handles,
+# and pass it around
+position_handles_list = []
 
 # finally, run
 ani = FuncAnimation(fig=fig, func=ani_update, frames=num_timesteps, 
-                    fargs=(pm_state_history, line), interval=1, blit=False)
+                    fargs=(pm_state_history, line, position_handles_list), interval=50, blit=False)
+
 plt.show()
+
+ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
+        color='m', marker='o')
