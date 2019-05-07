@@ -10,6 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 # for nicer plots / animations,
 import plotly.offline as plyoff
 import plotly.graph_objs as go
@@ -314,10 +315,9 @@ numticksz = 4
 zloc = plt.MaxNLocator(numticksz)
 ax.zaxis.set_major_locator(zloc)
 
-# ax.locator_params(nbins=8)
-# ax.locator_params(nbins=8, axis='y')
-# ax.locator_params(nbins=8, axis='z')
-# ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
+# Setup the moviewriter to save the animation
+Writer = animation.writers['ffmpeg']
+writer = Writer(fps=15, metadata=dict(artist='Andrew P. Sabelhaus'), bitrate=1800)
 
 # The starting point
 ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
@@ -345,7 +345,7 @@ def cable_color_chooser(frameno, tag, force_history, bound):
         else:
                 return 'g'
 
-# Initialize the dictionary of lines per anchor.
+# # Initialize the dictionary of lines per anchor.
 cable_lines_dict = {}
 for tag in cable_tags:
         anch = cable_anchors[tag]
@@ -373,71 +373,80 @@ ax.set_zlim(-0.2, 0.5)
 # # labels
 ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
     title='Cable-driven robot (particle) position, closed-loop control')
-# #ax.grid()
 
-# # The easiest way to do things here are a few functions inside this script.
-# def ani_init():
-#         # initialize/reset the image for the animation.
-#         ax.set_xlim(-0.15, 0.3)
-#         ax.set_ylim(-0.6, 0.15)
-#         ax.set_zlim(-0.2, 0.5)
-#         return line,
+# # #ax.grid()
 
-# Used to update the lines used to represent the cables, 
-# from anchors to point mass.
-def update_cable_lines(frameno, pm_state_history, cable_lines_dict, 
-                       cable_tags, cable_anchors, force_history, bound):
-        # As with the initialization,
-        for tag in cable_tags:
-                anch = cable_anchors[tag]
-                # Organize cable lines into three, 2-element np arrays
-                clx = np.array([pm_state_history[frameno-1,0], anch[0]])
-                cly = np.array([pm_state_history[frameno-1,1], anch[1]])
-                clz = np.array([pm_state_history[frameno-1,2], anch[2]])
-                # Pull out this line
-                cable_line_i = cable_lines_dict[tag]
-                # Get the right color for this cable
-                color_i = cable_color_chooser(frameno-1, tag, force_history, eps)
-                # Update it appropriately
-                cable_line_i.set_data(clx, cly)
-                cable_line_i.set_color(color_i)
-                cable_line_i.set_3d_properties(clz)
+# # # The easiest way to do things here are a few functions inside this script.
+# # def ani_init():
+# #         # initialize/reset the image for the animation.
+# #         ax.set_xlim(-0.15, 0.3)
+# #         ax.set_ylim(-0.6, 0.15)
+# #         ax.set_zlim(-0.2, 0.5)
+# #         return line,
 
-# Update the animation - this is passed to FuncAnimation
-# Need to pass in all the arguments to update_cable_lines too,
-# messy.
-def ani_update(frameno, pm_state_history, ln, handles, cable_lines_dict, 
-               cable_tags, cable_anchors, force_history, bound):
-        # First, clear out all the scatterplots from prev calls.
-        # The guard evaluates to true if handles is not empty
-        while len(handles) != 0:
-                h = handles.pop()
-                h.remove()
-        # Given a timestep (that's 'frame'),
-        # plot all the data from zero until now.
-        ln.set_data(pm_state_history[0:frameno, 0], pm_state_history[0:frameno, 1])
-        ln.set_3d_properties(pm_state_history[0:frameno, 2])
-        next_h = ax.scatter(pm_state_history[frameno-1,0], pm_state_history[frameno-1,1], pm_state_history[frameno-1,2],
-                color='blue', marker='o', s=60)
-        handles.append(next_h)
-        # Also update the lines from the pointmass to the cable anchors
-        update_cable_lines(frameno, pm_state_history, cable_lines_dict, 
-                           cable_tags, cable_anchors, force_history, bound)
-        return ln
+# # Used to update the lines used to represent the cables, 
+# # from anchors to point mass.
+# def update_cable_lines(frameno, pm_state_history, cable_lines_dict, 
+#                        cable_tags, cable_anchors, force_history, bound):
+#         # As with the initialization,
+#         for tag in cable_tags:
+#                 anch = cable_anchors[tag]
+#                 # Organize cable lines into three, 2-element np arrays
+#                 clx = np.array([pm_state_history[frameno-1,0], anch[0]])
+#                 cly = np.array([pm_state_history[frameno-1,1], anch[1]])
+#                 clz = np.array([pm_state_history[frameno-1,2], anch[2]])
+#                 # Pull out this line
+#                 cable_line_i = cable_lines_dict[tag]
+#                 # Get the right color for this cable
+#                 color_i = cable_color_chooser(frameno-1, tag, force_history, eps)
+#                 # Update it appropriately
+#                 cable_line_i.set_data(clx, cly)
+#                 cable_line_i.set_color(color_i)
+#                 cable_line_i.set_3d_properties(clz)
 
-# One way to pass around the handles to the updated positions
-# is to store in a list of those handles,
-# and pass it around
-position_handles_list = []
+# # Update the animation - this is passed to FuncAnimation
+# # Need to pass in all the arguments to update_cable_lines too,
+# # messy.
+# def ani_update(frameno, pm_state_history, ln, handles, cable_lines_dict, 
+#                cable_tags, cable_anchors, force_history, bound):
+#         # First, clear out all the scatterplots from prev calls.
+#         # The guard evaluates to true if handles is not empty
+#         while len(handles) != 0:
+#                 h = handles.pop()
+#                 h.remove()
+#         # Given a timestep (that's 'frame'),
+#         # plot all the data from zero until now.
+#         ln.set_data(pm_state_history[0:frameno, 0], pm_state_history[0:frameno, 1])
+#         ln.set_3d_properties(pm_state_history[0:frameno, 2])
+#         next_h = ax.scatter(pm_state_history[frameno-1,0], pm_state_history[frameno-1,1], pm_state_history[frameno-1,2],
+#                 color='blue', marker='o', s=60)
+#         handles.append(next_h)
+#         # Also update the lines from the pointmass to the cable anchors
+#         update_cable_lines(frameno, pm_state_history, cable_lines_dict, 
+#                            cable_tags, cable_anchors, force_history, bound)
+#         return ln
 
-# finally, run
-ani = FuncAnimation(fig=fig, func=ani_update, frames=num_timesteps, 
-                    fargs=(pm_state_history, pm_path_line, position_handles_list,
-                           cable_lines_dict, cable_tags, cable_anchors, 
-                           force_history, eps), 
-                    interval=50, blit=False)
+# # One way to pass around the handles to the updated positions
+# # is to store in a list of those handles,
+# # and pass it around
+# position_handles_list = []
+
+# # finally, run
+# ani = FuncAnimation(fig=fig, func=ani_update, frames=num_timesteps, 
+#                     fargs=(pm_state_history, pm_path_line, position_handles_list,
+#                            cable_lines_dict, cable_tags, cable_anchors, 
+#                            force_history, eps), 
+#                     interval=50, blit=False)
+
+# # label the final point (the equilibrium point)
+# # ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
+#         # color='m', marker='o')
+# # ax.text(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2], 'eq')
+
+ax.scatter(bar_r[0], bar_r[1], bar_r[2],
+        color='m', marker='o')
+ax.text(bar_r[0], bar_r[1], bar_r[2], 'eq')
 
 plt.show()
 
-ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
-        color='m', marker='o')
+# ani.save('simulation_particle_3d.mp4', writer=writer)
