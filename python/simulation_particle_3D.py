@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
 # for nicer plots / animations,
 import plotly.offline as plyoff
 import plotly.graph_objs as go
@@ -125,8 +126,9 @@ g = 9.8
 #pm_vel_initial = np.array([0,0])
 
 # Initial condition:
-pm_pos_initial = [0.1, 0.5, 2.]
-pm_vel_initial = [3., 3., 15.]
+# CHANGE THIS - NEEDS TO BE INSIDE CONVEX HULL OF POINTS
+pm_pos_initial = [0.1, 0.1, .08]
+pm_vel_initial = [.3, .3, 15]
 
 # The body itself:
 pm = point_mass3D.PointMass3D(m, g, pm_pos_initial, pm_vel_initial)
@@ -269,16 +271,24 @@ print(tf[0:3])
 print('Error is:')
 print(tf[0:3] - bar_r)
 
-# # Let's plot the results!
-# fig = plt.figure()
-# ax = fig.add_subplot(111, projection='3d')
-# # REMEMBER THAT PYTHON INDEXES FROM 0
-# # 3D:
+# Let's plot the results!
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+# REMEMBER THAT PYTHON INDEXES FROM 0
+# 3D:
+line, = ax.plot(pm_state_history[0:1,0], pm_state_history[0:1,1], pm_state_history[0:1,2])
 # ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
 # ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
 #         color='green', marker='o')
 # ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
 #         color='m', marker='o')
+# Setting the plot limits:
+# ax.set_xlim(-0.7, 0.7)
+# ax.set_ylim(-0.2, 0.6)
+# ax.set_zlim(-0.6, 2.5)
+ax.set_xlim(-0.15, 0.3)
+ax.set_ylim(-0.6, 0.15)
+ax.set_zlim(-0.2, 0.5)
 # # To-do here: annotate initial and final timesteps.
 # ax.text(t0[0], t0[1], t0[2], 't0')
 # ax.text(tf[0], tf[1], tf[2], 'tf')
@@ -286,62 +296,23 @@ print(tf[0:3] - bar_r)
 # ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
 #     title='Open-loop slack cable control results')
 # #ax.grid()
-# # make a line at the equilibrium position
-# #ax.axhline(y=6.5, label='Equilibrium position')
-# plt.show()
 
-# Using plotly for plotting,
-traj = go.Scatter3d(
-        x = pm_state_history[:,0],
-        y = pm_state_history[:,1],
-        z = pm_state_history[:,2],
-        # marker = dict(
-        #         size = 12,
-        #         color = 'blue'
-        # ),
-        mode = 'lines',
-        line = dict(
-                width = 6,
-                color = 'blue'
-        )
-)
+# # The easiest way to do things here are a few functions inside this script.
+def ani_init():
+        # initialize/reset the image for the animation.
+        ax.set_xlim(-0.15, 0.3)
+        ax.set_ylim(-0.6, 0.15)
+        ax.set_zlim(-0.2, 0.5)
+        return line,
 
-plylayout = go.Layout(
-        title = 'Particle Cable-Driven Robot Position',
-        scene = dict(
-                xaxis = dict(title = 'X pos. (m)'),
-                yaxis = dict(title = 'Y pos. (m)'),
-                zaxis = dict(title = 'Z pos. (m)'),
-        ),
-        font = dict(size = 16),
-        updatemenus = [dict(
-                        type = 'buttons',
-                        buttons = [dict(
-                                label = 'Play',
-                                method = 'animate',
-                                args = [None]
-                        )]
-        )]
-)
+def ani_update(frameno, pm_state_history, ln):
+        # Given a timestep (that's 'frame'),
+        # plot all the data from zero until now.
+        ln.set_data(pm_state_history[0:frameno, 0], pm_state_history[0:frameno, 1])
+        ln.set_3d_properties(pm_state_history[0:frameno, 2])
+        return ln,
 
-# Inputs to plotly
-plydata = [traj]
-plyfig = go.Figure(data = plydata, layout = plylayout)
-
-# For an animated version:
-plyframes = [dict(
-                data = dict(
-                        x = pm_state_history[t,0],
-                        y = pm_state_history[t,1],
-                        z = pm_state_history[t,2],
-                        mode = 'markers',
-                        marker = dict(
-                                size = 18,
-                                color = 'red'
-                        )
-                )
-        ) for t in range(num_timesteps)
-]
-
-# this should give us an html link?
-plyoff.plot(plyfig)
+# finally, run
+ani = FuncAnimation(fig=fig, func=ani_update, frames=num_timesteps, 
+                    fargs=(pm_state_history, line), interval=1, blit=False)
+plt.show()
