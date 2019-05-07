@@ -168,6 +168,13 @@ pm_state_history = np.zeros((num_timesteps+1, 6))
 # Insert the initial state into the ndarray.
 pm_state_history[0] = pm.get_state()
 
+# Also going to save the applied cable forces.
+# This will allow us to test for slackness, in addition to 
+# checking the Lyapunov function.
+# We want to save according to timestep. So, do a list indexed by time,
+# with a dict by tag.
+force_history = []
+
 ### Run the simulation.
 
 # The "pythonic" way of iterating over both timesteps and history
@@ -202,6 +209,9 @@ for t in range(num_timesteps):
     # when we're simulating only a single point mass,
     # will be that point mass' position and velocity!!
     forces_list = []
+    # ...need a list for calculating the pointmass state,
+    # but we want a dict for recording and referencing the SCALAR force!
+    forces_dict = {}
     # The "pythonic" way of iterating over both cables and control inputs
     # would be to use the 'zip' function, but unsure if that's best here...
     # default to a more MATLAB-ian syntax.
@@ -209,14 +219,14 @@ for t in range(num_timesteps):
 
         # calculate the control input for this cable based on its length.
         # length calulated by cable. All are connected to the point mass.
-        l_i = cables[tag].get_length(pm_pos)
+        ell_i = cables[tag].get_length(pm_pos)
         
         # CONTROL LAW
         # open loop:
         # control_i = controllers[tag]
 
         # Affine output feedback:
-        control_i = controllers[tag].v(l_i)
+        control_i = controllers[tag].v(ell_i)
 
         #debugging
         # print('Length and control input for cable ' + tag)
@@ -236,6 +246,15 @@ for t in range(num_timesteps):
         force_i = -cables[tag].force_3d(pm_pos, pm_vel, control_i)
         #print(force_i)
         forces_list.append(force_i)
+        
+        # For the recording of the force, we want the SCALAR force!
+        # This is *not* the norm of the force, it's signed according to the
+        # unit vector along the cable, etc.
+        # need d \ell
+        dot_ell_i = cables[tag].get_dot_length(pm_pos, pm_vel)
+        # then the scalar function call is
+        force_i_scalar = cables[tag].scalar_force(ell_i, dot_ell_i, control_i)
+        forces_dict[tag] = force_i_scalar
     
     #debugging
     # print('Forces at timestep ' + str(t))
@@ -253,6 +272,7 @@ for t in range(num_timesteps):
     # Set the new point mass state:
     pm.set_state(pm_state_tp1)
     pm_state_history[t+1] = pm_state_tp1
+    force_history.append(forces_dict)
     # end.
 
 # An analysis at the end.
