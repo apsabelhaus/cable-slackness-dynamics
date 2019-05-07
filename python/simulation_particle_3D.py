@@ -9,6 +9,9 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+# for nicer plots / animations,
+import plotly.offline as plyoff
+import plotly.graph_objs as go
 # for the cables and other things we write,
 # let's make it so we don't need to use the module name
 from cable_models import *
@@ -266,24 +269,79 @@ print(tf[0:3])
 print('Error is:')
 print(tf[0:3] - bar_r)
 
-# Let's plot the results!
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-# REMEMBER THAT PYTHON INDEXES FROM 0
-# 3D:
-ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
-ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
-        color='green', marker='o')
-ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
-        color='m', marker='o')
-# To-do here: annotate initial and final timesteps.
-ax.text(t0[0], t0[1], t0[2], 't0')
-ax.text(tf[0], tf[1], tf[2], 'tf')
-# labels
-ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
-    title='Open-loop slack cable control results')
-#ax.grid()
-# make a line at the equilibrium position
-#ax.axhline(y=6.5, label='Equilibrium position')
-plt.show()
+# # Let's plot the results!
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection='3d')
+# # REMEMBER THAT PYTHON INDEXES FROM 0
+# # 3D:
+# ax.plot(pm_state_history[:,0], pm_state_history[:,1], pm_state_history[:,2])
+# ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
+#         color='green', marker='o')
+# ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
+#         color='m', marker='o')
+# # To-do here: annotate initial and final timesteps.
+# ax.text(t0[0], t0[1], t0[2], 't0')
+# ax.text(tf[0], tf[1], tf[2], 'tf')
+# # labels
+# ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
+#     title='Open-loop slack cable control results')
+# #ax.grid()
+# # make a line at the equilibrium position
+# #ax.axhline(y=6.5, label='Equilibrium position')
+# plt.show()
 
+# Using plotly for plotting,
+traj = go.Scatter3d(
+        x = pm_state_history[:,0],
+        y = pm_state_history[:,1],
+        z = pm_state_history[:,2],
+        # marker = dict(
+        #         size = 12,
+        #         color = 'blue'
+        # ),
+        mode = 'lines',
+        line = dict(
+                width = 6,
+                color = 'blue'
+        )
+)
+
+plylayout = go.Layout(
+        title = 'Particle Cable-Driven Robot Position',
+        scene = dict(
+                xaxis = dict(title = 'X pos. (m)'),
+                yaxis = dict(title = 'Y pos. (m)'),
+                zaxis = dict(title = 'Z pos. (m)'),
+        ),
+        font = dict(size = 16),
+        updatemenus = [dict(
+                        type = 'buttons',
+                        buttons = [dict(
+                                label = 'Play',
+                                method = 'animate',
+                                args = [None]
+                        )]
+        )]
+)
+
+# Inputs to plotly
+plydata = [traj]
+plyfig = go.Figure(data = plydata, layout = plylayout)
+
+# For an animated version:
+plyframes = [dict(
+                data = dict(
+                        x = pm_state_history[t,0],
+                        y = pm_state_history[t,1],
+                        z = pm_state_history[t,2],
+                        mode = 'markers',
+                        marker = dict(
+                                size = 18,
+                                color = 'red'
+                        )
+                )
+        ) for t in range(num_timesteps)
+]
+
+# this should give us an html link?
+plyoff.plot(plyfig)
