@@ -1,5 +1,6 @@
 """
-Simulation script for the particle with viscoelastic cables.
+Simulation script for the particle with viscoelastic cables,
+particle inside a box (not just a pyramid like earlier.)
 This goes with the controller derived in Drew's dissertation.
 (C) Andrew P. Sabelhaus, 2019
 """
@@ -25,31 +26,46 @@ from controllers import *
 # Each cable will have a tag associated with it.
 # Makes it easier than numbering.
 
-cable_tags = ['top', 'bottom', 'left', 'right']
+# cable_tags = ['top', 'bottom', 'left', 'right']
+cable_tags = ['A','B','C','D','E','F','G','H']
 
-# Let's do top bottom left right, like the spine frame, for 
-# a tetrahedral convex hull.
-params_top = {'k':300, 'c':10}
-params_bottom = {'k':100, 'c':10}
-params_left = {'k':150, 'c':10}
-params_right = {'k':350, 'c':10}
+# Box is labelled A...H as nodes.
+# Cable parameters:
+# back face
+pA = {'k':300, 'c':10}
+pB = {'k':1500, 'c':10}
+pC = {'k':150, 'c':10}
+pD = {'k':80, 'c':10}
+# front face
+pE = {'k':180, 'c':10}
+pF = {'k':900, 'c':10}
+pG = {'k':1000, 'c':10}
+pH = {'k':470, 'c':10}
 
 # Put the parameters into a nested dict.
-cable_params = {'top':params_top, 'bottom':params_bottom, 
-                'left':params_left, 'right':params_right}
+cable_params = {'A':pA, 'B':pB, 'C':pC, 'D':pD, 
+                'E':pE, 'F':pF, 'G':pG, 'H':pH}
 
 # Anchor points for each cable.
 # These are all in three dimensions.
 # Force floating point numbers.
-# (check these later.)
-anchor_top = np.array([0., .2, .2])
-anchor_bottom = np.array([0., .2, -.2])
-anchor_left = np.array([-.2, -.2, 0.])
-anchor_right = np.array([.2, -.2, 0.])
+
+# box (cube dimension)
+bn = 1.
+# back face
+aA = np.array([0., 0., 0.])
+aB = np.array([0., 0., bn])
+aC = np.array([0., bn, bn])
+aD = np.array([0., bn, 0.])
+# front face
+aE = np.array([bn, 0., 0.])
+aF = np.array([bn, 0., bn])
+aG = np.array([bn, bn, bn])
+aH = np.array([bn, bn, 0.])
 
 # Anchors in a nested dict too.
-cable_anchors = {'top':anchor_top, 'bottom':anchor_bottom,
-                 'left':anchor_left, 'right':anchor_right}
+cable_anchors = {'A':aA, 'B':aB, 'C':aC, 'D':aD, 
+                'E':aE, 'F':aF, 'G':aG, 'H':aH}
 
 # create the cables
 # important that each tag has a set of parameters and an anchor!
@@ -60,16 +76,21 @@ for tag in cable_tags:
                         anchor_pos = cable_anchors[tag])                                                                      
 
 
-# For feedback control, declare the required constants.
-# As with the cables, assume that each controller will have a tag,
-# and do a nested dictionary.
-controller_consts_top = {'kappa':0.88, 'bar_ell':0.217944947177034, 'bar_v': 0.186851770747656}
-controller_consts_bottom = {'kappa':0.995, 'bar_ell':0.295803989154981, 'bar_v': 0.292845949263251}
-controller_consts_left = {'kappa':0.98, 'bar_ell':0.357071421427142, 'bar_v': 0.346645035107927}
-controller_consts_right = {'kappa':0.95, 'bar_ell':0.295803989154981, 'bar_v': 0.277295287050143}
+# For feedback control, declare the required controller constants.
 
-controller_consts = {'top':controller_consts_top, 'bottom':controller_consts_bottom,
-                 'left':controller_consts_left, 'right':controller_consts_right}
+# back face
+ccA = {'kappa':0.95, 'bar_ell':0.743303437365925, 'bar_v':0.69186683950129}
+ccB = {'kappa':0.92, 'bar_ell':0.390512483795333, 'bar_v':0.335517912410296}
+ccC = {'kappa':0.85, 'bar_ell':0.867467578644874, 'bar_v':0.705540297302958}
+ccD = {'kappa':0.93, 'bar_ell':1.07354552767919, 'bar_v':0.912513698505512}
+# front face
+ccE = {'kappa':0.97, 'bar_ell':1.11915146427997, 'bar_v':1.04454136665865}
+ccF = {'kappa':0.995, 'bar_ell':0.923309265630969, 'bar_v':0.910998475422311}
+ccG = {'kappa':0.995, 'bar_ell':1.20519707931939, 'bar_v':1.19073471436736}
+ccH = {'kappa':0.985, 'bar_ell':1.36106575888162, 'bar_v':1.32631514376099}
+
+controller_consts = {'A':ccA, 'B':ccB, 'C':ccC, 'D':ccD, 
+                'E':ccE, 'F':ccF, 'G':ccG, 'H':ccH}
 
 # Affine, output feedback controllers.
 controllers = {}
@@ -105,7 +126,7 @@ for tag in cable_tags:
 #pretensions = [300.0, 285.8]
 
 # Now, for the mass: in kilograms and SI units,
-m = 0.495
+m = 4.
 g = 9.8
 # 1D:
 # example: for a cable anchor at x=2,
@@ -126,10 +147,10 @@ g = 9.8
 #pm_pos_initial = np.array([0,0])
 #pm_vel_initial = np.array([0,0])
 
-# Initial condition:
-# CHANGE THIS - NEEDS TO BE INSIDE CONVEX HULL OF POINTS
-pm_pos_initial = [0.1, 0.1, .08]
-pm_vel_initial = [.3, .3, 15]
+# Initial condition: must be within box.
+pm_pos_initial = [0.5, 0.3, .8]
+# pm_pos_initial = [0.5, 0.3, .3] # this one exits the box, for example
+pm_vel_initial = [-1, .3, -6]
 
 # The body itself:
 pm = point_mass3D.PointMass3D(m, g, pm_pos_initial, pm_vel_initial)
@@ -277,6 +298,12 @@ for t in range(num_timesteps):
     # end.
 
 # An analysis at the end.
+# First, check to see if the particle ever exited the box.
+# no dimension should be less than 0 or greater than bn.
+print('Did particle exit the box? < 0, > 1?')
+print(np.any(pm_state_history[:,0:3] < 0))
+print(np.any(pm_state_history[:,0:3] > 1))
+
 # Add a green point for the initial position,
 # and a purple point for the final
 t0 = pm_state_history[0,:]
@@ -284,7 +311,7 @@ tf = pm_state_history[-1,:]
 
 print('Equilibrium position should be:')
 # ...from MATLAB's calculations,
-bar_r = np.array([0.05, 0.05, 0.05])
+bar_r = np.array([0.15, 0.2, 0.7])
 print(bar_r)
 print('Point mass position at final timestep:')
 print(tf[0:3])
@@ -295,12 +322,13 @@ print(tf[0:3] - bar_r)
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 # Change the azimuth and elevation for better viewing
-az = -47.
-elev = 36.
+# az = -47.
+# elev = 36.
 # REMEMBER THAT PYTHON INDEXES FROM 0
 # 3D:
 pm_path_line = ax.plot(pm_state_history[0:1,0], pm_state_history[0:1,1], pm_state_history[0:1,2])[0]
-ax.view_init(elev=elev, azim=az)
+# ax.view_init(elev=elev, azim=az)
+# ax.view_init(elev=elev, azim=az)
 
 # change the density of ticks
 numticksx = 5
@@ -364,10 +392,14 @@ for tag in cable_tags:
 # ax.set_xlim(-0.7, 0.7)
 # ax.set_ylim(-0.2, 0.6)
 # ax.set_zlim(-0.6, 2.5)
-ax.set_xlim(-0.15, 0.3)
-ax.set_ylim(-0.6, 0.15)
-ax.set_zlim(-0.2, 0.5)
-# # To-do here: annotate initial and final timesteps.
+# ax.set_xlim(-0.15, 0.3)
+# ax.set_ylim(-0.6, 0.15)
+# ax.set_zlim(-0.2, 0.5)
+
+# For the box:
+ax.set_xlim(-0.1, bn)
+ax.set_ylim(-0.1, bn)
+ax.set_zlim(-0.1, bn)
 
 # ax.text(tf[0], tf[1], tf[2], 'tf')
 # # labels
@@ -459,4 +491,4 @@ ax.text(bar_r[0], bar_r[1], bar_r[2], 'eq')
 ############# Comment this out to save the video. Can't see and save at same time.
 plt.show()
 
-ani.save('simulation_particle_3d_test.mp4', writer=writer)
+# ani.save('simulation_particle_3d_test.mp4', writer=writer)
