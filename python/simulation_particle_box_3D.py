@@ -324,11 +324,12 @@ ax = fig.add_subplot(111, projection='3d')
 # Change the azimuth and elevation for better viewing
 # az = -47.
 # elev = 36.
+az = -62.
+elev = 13.
 # REMEMBER THAT PYTHON INDEXES FROM 0
 # 3D:
 pm_path_line = ax.plot(pm_state_history[0:1,0], pm_state_history[0:1,1], pm_state_history[0:1,2])[0]
-# ax.view_init(elev=elev, azim=az)
-# ax.view_init(elev=elev, azim=az)
+ax.view_init(elev=elev, azim=az)
 
 # change the density of ticks
 numticksx = 5
@@ -352,6 +353,16 @@ ax.scatter(pm_state_history[0,0], pm_state_history[0,1], pm_state_history[0,2],
         color='blue', marker='o', s=60)
 ax.text(t0[0], t0[1], t0[2], 't0')
 
+# Setting the plot limits:
+# For the box:
+ax.set_xlim(-0.1, bn+0.1)
+ax.set_ylim(-0.1, bn+0.1)
+ax.set_zlim(-0.1, bn+0.1)
+
+# # labels
+ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
+    title='Cable-driven robot (particle) position, closed-loop control')
+
 # plot the anchor points
 for tag in cable_tags:
         anch = cable_anchors[tag]
@@ -373,7 +384,7 @@ def cable_color_chooser(frameno, tag, force_history, bound):
         else:
                 return 'g'
 
-# # Initialize the dictionary of lines per anchor.
+# Initialize the dictionary of lines per anchor.
 cable_lines_dict = {}
 for tag in cable_tags:
         anch = cable_anchors[tag]
@@ -388,23 +399,35 @@ for tag in cable_tags:
         # and save it to the dict, so we can continue to update it later
         cable_lines_dict[tag] = cable_line_i
 
-# Setting the plot limits:
-# ax.set_xlim(-0.7, 0.7)
-# ax.set_ylim(-0.2, 0.6)
-# ax.set_zlim(-0.6, 2.5)
-# ax.set_xlim(-0.15, 0.3)
-# ax.set_ylim(-0.6, 0.15)
-# ax.set_zlim(-0.2, 0.5)
+# Plot the box's edges.
+edge_color = 'b'
+# The box's edges that should be connected.
+# A list of lists.
+box_edges = [['A','B'],
+             ['B','C'],
+             ['C','D'],
+             ['D','A'],
+             ['E','F'],
+             ['F','G'],
+             ['G','H'],
+             ['H','E'],
+             ['A','E'],
+             ['B','F'],
+             ['C','G'],
+             ['D','H']]
 
-# For the box:
-ax.set_xlim(-0.1, bn)
-ax.set_ylim(-0.1, bn)
-ax.set_zlim(-0.1, bn)
-
-# ax.text(tf[0], tf[1], tf[2], 'tf')
-# # labels
-ax.set(xlabel='Pos, X (m)', ylabel='Pos, Y (m)', zlabel='Pos, Z (m)',
-    title='Cable-driven robot (particle) position, closed-loop control')
+# then plot each edge
+# this is not pythonic, sorry.
+for edge in range(len(box_edges)):
+        # get the anchor points for these two that form an edge
+        anch1 = cable_anchors[box_edges[edge][0]]
+        anch2 = cable_anchors[box_edges[edge][1]]
+        # Organize lines into three, 2-element np arrays
+        clx = np.array([anch1[0], anch2[0]])
+        cly = np.array([anch1[1], anch2[1]])
+        clz = np.array([anch1[2], anch2[2]])
+        # Actually plot the line
+        edge_line = ax.plot(clx, cly, clz, color=edge_color)[0]
 
 # # #ax.grid()
 
@@ -468,17 +491,15 @@ def ani_update(frameno, pm_state_history, ln, handles, cable_lines_dict,
 # and pass it around
 position_handles_list = []
 
-# finally, run
-ani = FuncAnimation(fig=fig, func=ani_update, frames=num_timesteps, 
-                    fargs=(pm_state_history, pm_path_line, position_handles_list,
-                           cable_lines_dict, cable_tags, cable_anchors, 
-                           force_history, eps), 
-                    interval=50, blit=False)
+# finally, run the animation if specified
+run_ani = 1
 
-# label the final point (the equilibrium point)
-# ax.scatter(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2],
-        # color='m', marker='o')
-# ax.text(pm_state_history[-1,0], pm_state_history[-1,1], pm_state_history[-1,2], 'eq')
+if run_ani:
+        ani = FuncAnimation(fig=fig, func=ani_update, frames=num_timesteps, 
+                        fargs=(pm_state_history, pm_path_line, position_handles_list,
+                                cable_lines_dict, cable_tags, cable_anchors, 
+                                force_history, eps), 
+                        interval=50, blit=False)
 
 #############
 ############# FINISH UNCOMMENT to get animation
