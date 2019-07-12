@@ -38,3 +38,52 @@ class PiecewiseLinearCable3D(cable_base3D.Cable3D):
         # into a single line.
         F_rect = (F) if np.greater_equal(F, 0) else 0
         return F_rect
+    
+    def get_Uf(self, point_pos, control_input):
+        """ It would be hard to implement the exact eqn from my notes,
+            since that already has the loop closed.
+            Instead, this should be the same as 1/2 k vareps^2, i.e., 
+            square the amount of stretch, which is vareps = ell - u.
+            So just throw an error for negative stretch (undefined.)"""
+        ############# TO-DO:
+        ############# make cables closed-loop and see if this changes!!!!
+        stretch = self.get_length(point_pos) - control_input
+        if stretch <= 0:
+            raise Exception('Negative stretch length, Uf is undefined, exiting.')
+        else:
+            Uf = 0.5 * self.params['k'] * stretch**2
+            # print(Uf)
+            return Uf
+    
+    def get_Uf_affine(self, point_pos, controller):
+        """ HACKY """
+        # This function returns the Uf with the closed-loop affine control law.
+        # Pull out the controller's constants
+        kappa = controller.get_kappa()
+        bar_ell = controller.get_bar_ell()
+        bar_v = controller.get_bar_v()
+        ell = self.get_length(point_pos)
+        # From Drew's notes, this should be
+        # 1/2 kappa_i alpha_i ell^2 + kappa_i beta_i ell
+        # with
+        # alpha_i = (1 - kappa_i)
+        # beta_i = kappa_i bar_ell_i - bar_u
+        alpha = 1 - kappa
+        beta = kappa * bar_ell -  bar_v
+        k = self.params['k']
+        return 0.5 * k * alpha * ell**2 + k * beta * ell
+
+    ##################### THIS IS INCORRECT
+    def get_Uf_adjusted(self, point_pos, controller):
+        """ HACKY """
+        # This function returns the Uf with the closed-loop affine control law,
+        # WITH THE ADJUSTMENTS for integrating with the control input included!
+        # Pull out the controller's constants
+        kappa = controller.get_kappa()
+        ell = self.get_length(point_pos)
+        # amount of stretch applied is
+        stretch = controller.v(ell)
+        # From Drew's notes, this should be
+        # 1/2 k_i / (1 - kappa) stretch^2
+        Uf_i = 0.5 * (self.params['k'] / (1 - kappa)) * stretch**2
+        return Uf_i

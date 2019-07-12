@@ -34,6 +34,20 @@ class PointMass3D:
     def get_state(self):
         return np.concatenate((self.pos, self.vel))
 
+    # Kinetic and potential energy
+    
+    def get_KE(self):
+        # 1/2 m * v^2
+        KE = 0.5 * self.m * np.sum((self.vel)**2)
+        print(KE)
+        return KE
+
+    def get_PE(self):
+        # mg \br \cdot \bE^3
+        PE = self.m * self.g * self.pos[2]
+        # print(PE)
+        return PE
+
     def set_pos(self, pos):
         self.pos = pos
 

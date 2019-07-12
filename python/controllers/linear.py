@@ -29,6 +29,16 @@ class AffineFeedback:
     def v(self, ell):
         # Here's the calculation
         return self.kappa * (ell - self.bar_ell) + self.bar_v
+    
+    # needs to return some of its constants
+    def get_kappa(self):
+        return self.kappa
+    
+    def get_bar_ell(self):
+        return self.bar_ell
+    
+    def get_bar_v(self):
+        return self.bar_v
 
 class OpenLoop:
     # A controller that returns a set value at each timestep: is open-loop.

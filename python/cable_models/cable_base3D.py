@@ -53,6 +53,10 @@ class Cable3D(ABC):
             the cable length, ell, and stretch rate, dot ell."""
         pass
 
+    # as with the augmented potential / scalar conservative potential.
+    def get_Uf(self, point_pos, control_input):
+        pass
+
     # ...however, this base class CAN project the force into its
     # n-dimensional space. Since scalar_force outputs a scalar.
     # Note that here, the position and velocity of the anchor need to be

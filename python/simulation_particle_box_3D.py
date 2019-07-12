@@ -148,9 +148,10 @@ g = 9.8
 #pm_vel_initial = np.array([0,0])
 
 # Initial condition: must be within box.
-pm_pos_initial = [0.5, 0.3, .8]
+pm_pos_initial = np.array([0.5, 0.3, .8])
 # pm_pos_initial = [0.5, 0.3, .3] # this one exits the box, for example
-pm_vel_initial = [-1, .3, -6]
+pm_vel_initial = np.array([-1, .3, -6])
+# pm_vel_initial = np.array([0.01, 0.01, 0.01]) # seems to have a weird issue with the Lyap fcn?!!
 
 # The body itself:
 pm = point_mass3D.PointMass3D(m, g, pm_pos_initial, pm_vel_initial)
@@ -174,7 +175,7 @@ num_timesteps = 200
 
 # for use later when plotting, make a big vector of all the timesteps
 # like described above, this includes 0, so we need to increment
-timesteps = np.arange(t_start, dt*(num_timesteps+1), dt)
+timesteps = np.arange(t_start, dt*(num_timesteps), dt)
 
 # We need to save the results of the system state, over time.
 # This needs to be a 2*d-dimensional by timestep problem
@@ -197,13 +198,37 @@ pm_state_history[0] = pm.get_state()
 # with a dict by tag.
 force_history = []
 
+# We'll need to calculate the Lyapunov candidate here, so 
+# define a quick function to calculate it
+################ TO-DO: NEED BOUNDING CONSTANT FROM MATLAB...
+def get_V(pm, cable_tags, cables, controllers):
+        # KE particle + PE particle + sum, all controllers, Uf
+        E = pm.get_KE() + pm.get_PE()
+        # initialize
+        Uf = 0.0
+        # add over all cables
+        for tag in cable_tags:
+                Uf_i = cables[tag].get_Uf_affine(pm.get_pos(), controllers[tag])
+                # Uf_i = cables[tag].get_Uf_adjusted(pm.get_pos(), controllers[tag])
+                # recreate the control input to try for the (correct?) Lyap fcn
+                # ell_i = cables[tag].get_length(pm.get_pos())
+                # control_i = controllers[tag].v(ell_i)
+                # Uf_i = cables[tag].get_Uf(pm.get_pos(), control_i)
+                Uf += Uf_i
+        # print(Uf)
+        return E + Uf
+
+# save the time series of Lyapunov function values
+V_history = np.zeros(num_timesteps+1)
+V_history[0] = get_V(pm, cable_tags, cables, controllers)
+
 ### Run the simulation.
 
 # The "pythonic" way of iterating over both timesteps and history
 # would be to use the 'zip' function, but unsure if that's best here...
 # default to a more MATLAB-ian syntax.
 for t in range(num_timesteps):
-    # ...note that this will have t from 0 to num_timesteps-1.
+    # ...note that this will have t from 0 to num_timesteps - 1.
     print('Timestep ' + str(t))
 
     # At a specific timestep, we have a control input for each cable.
@@ -295,6 +320,9 @@ for t in range(num_timesteps):
     pm.set_state(pm_state_tp1)
     pm_state_history[t+1] = pm_state_tp1
     force_history.append(forces_dict)
+    # and for the Lyapunov candidate,
+    V_i = get_V(pm, cable_tags, cables, controllers)
+    V_history[t+1] = V_i
     # end.
 
 # An analysis at the end.
@@ -324,8 +352,8 @@ ax = fig.add_subplot(111, projection='3d')
 # Change the azimuth and elevation for better viewing
 # az = -47.
 # elev = 36.
-az = -62.
-elev = 13.
+az = -70.
+elev = 16.
 # REMEMBER THAT PYTHON INDEXES FROM 0
 # 3D:
 pm_path_line = ax.plot(pm_state_history[0:1,0], pm_state_history[0:1,1], pm_state_history[0:1,2])[0]
@@ -369,38 +397,18 @@ for tag in cable_tags:
         ax.scatter(anch[0], anch[1], anch[2], s=60, color='black', marker='v')
         # ax.text(anch[0], anch[1], anch[2], )
 
+# Plot the equilibrium point (as calculated by MATLAB)
+ax.scatter(bar_r[0], bar_r[1], bar_r[2],
+        color='m', marker='o')
+ax.text(bar_r[0], bar_r[1], bar_r[2], 'eq')
+
 # For use below:
 # It's sometimes bad practice to compare with zero, when we know we're setting to
 # zero for slackness. Instead, less than a small constant.
 eps = 1E-10
 
-# A function to return the desired color for the cable.
-def cable_color_chooser(frameno, tag, force_history, bound):
-        # This cable's force. Index into a list then the dict
-        force = force_history[frameno][tag]
-        # Check if it's slack or not
-        if force <= bound:
-                return 'r'
-        else:
-                return 'g'
-
-# Initialize the dictionary of lines per anchor.
-cable_lines_dict = {}
-for tag in cable_tags:
-        anch = cable_anchors[tag]
-        # Organize cable lines into three, 2-element np arrays
-        clx = np.array([pm_state_history[0,0], anch[0]])
-        cly = np.array([pm_state_history[0,1], anch[1]])
-        clz = np.array([pm_state_history[0,2], anch[2]])
-        # Get the right color for this cable
-        color_i = cable_color_chooser(0, tag, force_history, eps)
-        # Actually plot the line
-        cable_line_i = ax.plot(clx, cly, clz, color=color_i)[0]
-        # and save it to the dict, so we can continue to update it later
-        cable_lines_dict[tag] = cable_line_i
-
 # Plot the box's edges.
-edge_color = 'b'
+edge_color = 'black'
 # The box's edges that should be connected.
 # A list of lists.
 box_edges = [['A','B'],
@@ -429,19 +437,41 @@ for edge in range(len(box_edges)):
         # Actually plot the line
         edge_line = ax.plot(clx, cly, clz, color=edge_color)[0]
 
-# # #ax.grid()
+# Turning off the grid
+ax.grid(False)
 
-# # The easiest way to do things here are a few functions inside this script.
-############# THIS FUNCTION UNUSED
-# def ani_init():
-#         # initialize/reset the image for the animation.
-#         ax.set_xlim(-0.15, 0.3)
-#         ax.set_ylim(-0.6, 0.15)
-#         ax.set_zlim(-0.2, 0.5)
-#         return line,
+# A function to return the desired color for the cable.
+def cable_color_chooser(frameno, tag, force_history, bound):
+        # This cable's force. Index into a list then the dict
+        force = force_history[frameno][tag]
+        # Check if it's slack or not
+        if force <= bound:
+                return 'r'
+        else:
+                return 'g'
+
+# Plot the initial cable vectors
+# Initialize the dictionary of lines per anchor.
+cable_lines_dict = {}
+for tag in cable_tags:
+        anch = cable_anchors[tag]
+        # Organize cable lines into three, 2-element np arrays
+        clx = np.array([pm_state_history[0,0], anch[0]])
+        cly = np.array([pm_state_history[0,1], anch[1]])
+        clz = np.array([pm_state_history[0,2], anch[2]])
+        # Get the right color for this cable
+        # color_i = cable_color_chooser(0, tag, force_history, eps)
+        # at the start, color all the lines green for a demonstration
+        color_i = 'g'
+        # Actually plot the line
+        cable_line_i = ax.plot(clx, cly, clz, color=color_i)[0]
+        # and save it to the dict, so we can continue to update it later
+        cable_lines_dict[tag] = cable_line_i
+
+# The easiest way to do things here are a few functions inside this script.
 
 #############
-############# UNCOMMENT to get animation
+############# START code for animation
 #############
 
 # Used to update the lines used to represent the cables, 
@@ -502,14 +532,19 @@ if run_ani:
                         interval=50, blit=False)
 
 #############
-############# FINISH UNCOMMENT to get animation
+############# END code for animation
 #############
-
-ax.scatter(bar_r[0], bar_r[1], bar_r[2],
-        color='m', marker='o')
-ax.text(bar_r[0], bar_r[1], bar_r[2], 'eq')
 
 ############# Comment this out to save the video. Can't see and save at same time.
 plt.show()
 
-# ani.save('simulation_particle_3d_test.mp4', writer=writer)
+# ani.save('simulation_particle_3d_box.mp4', writer=writer)
+
+####### Lyapunov Analysis
+deltaV = np.diff(V_history)
+print(deltaV)
+print(np.any(deltaV > 0))
+
+fig2, ax2 = plt.subplots()
+ax2.plot(timesteps, V_history[1:])
+plt.show()
