@@ -31,16 +31,17 @@ cable_tags = ['A','B','C','D','E','F','G','H']
 
 # Box is labelled A...H as nodes.
 # Cable parameters:
+damping = 15
 # back face
-pA = {'k':300, 'c':10}
-pB = {'k':1500, 'c':10}
-pC = {'k':150, 'c':10}
-pD = {'k':80, 'c':10}
+pA = {'k':300, 'c':damping}
+pB = {'k':1500, 'c':damping}
+pC = {'k':150, 'c':damping}
+pD = {'k':80, 'c':damping}
 # front face
-pE = {'k':180, 'c':10}
-pF = {'k':900, 'c':10}
-pG = {'k':1000, 'c':10}
-pH = {'k':470, 'c':10}
+pE = {'k':180, 'c':damping}
+pF = {'k':900, 'c':damping}
+pG = {'k':1000, 'c':damping}
+pH = {'k':470, 'c':damping}
 
 # Put the parameters into a nested dict.
 cable_params = {'A':pA, 'B':pB, 'C':pC, 'D':pD, 
@@ -148,10 +149,19 @@ g = 9.8
 #pm_vel_initial = np.array([0,0])
 
 # Initial condition: must be within box.
-pm_pos_initial = np.array([0.5, 0.3, .8])
+# pm_pos_initial = np.array([0.5, 0.3, .8])
 # pm_pos_initial = [0.5, 0.3, .3] # this one exits the box, for example
-pm_vel_initial = np.array([-1, .3, -6])
+# pm_vel_initial = np.array([-1, .3, -6])
 # pm_vel_initial = np.array([0.01, 0.01, 0.01]) # seems to have a weird issue with the Lyap fcn?!!
+
+##### Sets of initial conditions for each test
+# A
+# pm_pos_initial = np.array([0.5, 0.3, .8])
+# pm_vel_initial = np.array([-1, .3, -6])
+# B
+pm_pos_initial = np.array([0.8, 0.4, .2])
+pm_vel_initial = np.array([0-3, 1, 6])
+
 
 # The body itself:
 pm = point_mass3D.PointMass3D(m, g, pm_pos_initial, pm_vel_initial)
@@ -540,11 +550,33 @@ plt.show()
 
 # ani.save('simulation_particle_3d_box.mp4', writer=writer)
 
+############# Error analysis
+# calculate the 2-norm of the error for all timesteps
+bar_x = np.concatenate((bar_r, np.array([0, 0, 0])))
+state_err = pm_state_history - bar_x
+# print(state_err.shape[0])
+norm_err = np.linalg.norm(state_err, 2, axis=1)
+
 ####### Lyapunov Analysis
 deltaV = np.diff(V_history)
-print(deltaV)
+# print(deltaV)
+print('Any non-decresent results from the Lyapunov analysis?')
 print(np.any(deltaV > 0))
+
+# Adjust for the minimum value
+# this is easier than calculating it analytically in MATLAB,
+# HOWEVER, unknown if is really correct...
+min_V = np.min(V_history)
+V_history -= min_V
 
 fig2, ax2 = plt.subplots()
 ax2.plot(timesteps, V_history[1:])
 plt.show()
+
+# Save the results
+test_name = ''
+lyap_filename = './results/lyap_history_3D_' + test_name
+norm_err_filename = './results/norm_err_3D_' + test_name
+
+# np.save(lyap_filename, V_history)
+# np.save(norm_err_filename, norm_err)

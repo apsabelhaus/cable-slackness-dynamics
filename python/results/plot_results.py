@@ -9,9 +9,18 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # load the data files we want
-filenames = ['./1D_p5pt2_v0.npy', './1D_p5pt5_v10.npy', \
-            './1D_p5pt7_vminus5.npy', './1D_p6pt2_v0.npy', \
-            './1D_p6pt9_v0.npy', './1D_p6pt9_vminus15.npy']
+filenames = ['1D_p5pt2_v0.npy', '1D_p5pt5_v10.npy', \
+            '1D_p5pt7_vminus5.npy', '1D_p6pt2_v0.npy', \
+            '1D_p6pt9_v0.npy', '1D_p6pt9_vminus15.npy']
+# corrected for path
+directory = './results/'
+# an easy way 
+correct_for_path = 1
+if correct_for_path:
+    for i in range(len(filenames)):
+        filenames[i] = directory + filenames[i]
+
+
 # Make a list of strings identifying these files, used
 # as a legend later.
 datalabels = [r'Initial Condition: $x=5.2$, $\dot x = 0$', \
