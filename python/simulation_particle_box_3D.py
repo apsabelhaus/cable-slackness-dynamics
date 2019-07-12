@@ -31,7 +31,7 @@ cable_tags = ['A','B','C','D','E','F','G','H']
 
 # Box is labelled A...H as nodes.
 # Cable parameters:
-damping = 15
+damping = 20
 # back face
 pA = {'k':300, 'c':damping}
 pB = {'k':1500, 'c':damping}
@@ -155,13 +155,22 @@ g = 9.8
 # pm_vel_initial = np.array([0.01, 0.01, 0.01]) # seems to have a weird issue with the Lyap fcn?!!
 
 ##### Sets of initial conditions for each test
+
 # A
 # pm_pos_initial = np.array([0.5, 0.3, .8])
 # pm_vel_initial = np.array([-1, .3, -6])
-# B
-pm_pos_initial = np.array([0.8, 0.4, .2])
-pm_vel_initial = np.array([0-3, 1, 6])
 
+# B
+# pm_pos_initial = np.array([0.8, 0.4, .2])
+# pm_vel_initial = np.array([-3, 1, 6])
+
+# C
+# pm_pos_initial = np.array([0.2, 0.8, .5])
+# pm_vel_initial = np.array([-2, 1, 4])
+
+# D
+pm_pos_initial = np.array([0.3, 0.5, .1])
+pm_vel_initial = np.array([3, 6, 2])
 
 # The body itself:
 pm = point_mass3D.PointMass3D(m, g, pm_pos_initial, pm_vel_initial)
@@ -560,8 +569,9 @@ norm_err = np.linalg.norm(state_err, 2, axis=1)
 ####### Lyapunov Analysis
 deltaV = np.diff(V_history)
 # print(deltaV)
+# print(np.shape(deltaV))
 print('Any non-decresent results from the Lyapunov analysis?')
-print(np.any(deltaV > 0))
+print(np.any(deltaV > 0.000001))
 
 # Adjust for the minimum value
 # this is easier than calculating it analytically in MATLAB,
@@ -574,7 +584,7 @@ ax2.plot(timesteps, V_history[1:])
 plt.show()
 
 # Save the results
-test_name = ''
+test_name = 'D'
 lyap_filename = './results/lyap_history_3D_' + test_name
 norm_err_filename = './results/norm_err_3D_' + test_name
 

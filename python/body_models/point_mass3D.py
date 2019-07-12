@@ -39,7 +39,7 @@ class PointMass3D:
     def get_KE(self):
         # 1/2 m * v^2
         KE = 0.5 * self.m * np.sum((self.vel)**2)
-        print(KE)
+        # print(KE)
         return KE
 
     def get_PE(self):

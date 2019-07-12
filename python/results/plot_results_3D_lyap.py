@@ -9,7 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # The names for each set of files to load
-test_names = ['A','B']
+test_names = ['A','B','C','D']
 
 # creat the filename lists for both the norm error and Lyap results
 filenames_lyap = []
@@ -37,6 +37,11 @@ if correct_for_path:
 
 # Make a list of strings identifying these files, used
 # as a legend later.
+# This ABUSES ORDERING! ...because matplotlib assigns legends in order.
+datalabels = []
+for name in test_names:
+    datalabels.append('Initial Condition ' + name)
+
 # datalabels = [r'Initial Condition: $x=5.2$, $\dot x = 0$', \
 #              r'Initial Condition: $x=5.5$, $\dot x = 10$', \
 #              r'Initial Condition: $x=5.7$, $\dot x = -5$', \
@@ -62,9 +67,17 @@ num_timesteps = 200
 timesteps = np.arange(t_start, dt*(num_timesteps+1), dt)
 
 # Let's plot the results!
+figure_size = (5,4)
+fontsize = 12
+
+# set up the layout and font size for both plots
+plt.rcParams.update({'font.size': fontsize})
+plt.rcParams.update({'figure.autolayout': True})
+
 # make latex available
 # plt.rc('text', usetex=True)
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=figure_size)
+
 # REMEMBER THAT PYTHON INDEXES FROM 0
 # loop over data. Dictionary.
 for key in results_lyap:
@@ -83,13 +96,13 @@ ax.set(xlabel='Time (sec)', ylabel='Lyapunov Function (V) Value',
 #     title='Closed-loop slack cable control results')
 ax.grid()
 # legend
-# ax.legend(datalabels)
+ax.legend(datalabels)
 # make a line at the equilibrium position
 #ax.axhline(y=6.5, label='Equilibrium position')
 plt.show()
 
 # Next, for the norm error:
-fig2, ax2 = plt.subplots()
+fig2, ax2 = plt.subplots(figsize=figure_size)
 
 for key in results_norm_err:
     # we can shorten the amount of time to plot
@@ -100,5 +113,6 @@ for key in results_norm_err:
 ax2.set(xlabel='Time (sec)', ylabel='Total State Error (2-norm)', 
     title='Cable-Driven Robot State Error Analysis')
 
-ax2.grid
+ax2.legend(datalabels)
+ax2.grid()
 plt.show()
